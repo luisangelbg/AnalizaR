@@ -1,0 +1,768 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AnalizaR — Análisis estadístico sin programar</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header class="app-header">
+  <h1>AnalizaR</h1>
+  <p class="subtitle">Estadística descriptiva, supuestos, regresión, correlación y análisis multivariado — con figuras de calidad para publicación, sin escribir una línea de código.</p>
+</header>
+
+<nav class="stepper" id="stepper">
+  <button class="step-btn active" data-step="1"><span class="step-num">1</span> Datos</button>
+  <button class="step-btn" data-step="2" disabled><span class="step-num">2</span> Descriptiva</button>
+  <button class="step-btn" data-step="3" disabled><span class="step-num">3</span> Supuestos ANOVA</button>
+  <button class="step-btn" data-step="4" disabled><span class="step-num">4</span> Regresión y medias</button>
+  <button class="step-btn" data-step="5" disabled><span class="step-num">5</span> Correlación</button>
+  <button class="step-btn" data-step="6" disabled><span class="step-num">6</span> Multivariado</button>
+</nav>
+
+<main>
+
+  <!-- ============ PASO 1: DATOS ============ -->
+  <section class="step-panel active" id="panel-1">
+    <div class="card">
+      <h2>1. Sube tu archivo de datos</h2>
+      <p class="hint">Formato <b>.xlsx</b> o <b>.csv</b>. La <b>primera fila</b> debe tener los nombres de las variables
+        y cada fila siguiente una observación (como el archivo <code>iris.xlsx</code>). Las columnas pueden ser
+        numéricas (mediciones) o categóricas (grupos, tratamientos, especies…).</p>
+
+      <div class="drop-zone" id="dropZone">
+        <div class="dz-icon">⬆</div>
+        <p><b>Arrastra tu archivo aquí</b> o haz clic para elegirlo</p>
+        <p class="hint">.xlsx · .xls · .csv · .tsv</p>
+        <input type="file" id="fileInput" accept=".xlsx,.xls,.xlsm,.csv,.tsv,.txt" hidden>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-secondary" id="loadExampleBtn">Usar datos de ejemplo (iris)</button>
+      </div>
+      <div class="inline-label" id="sheetPicker" style="display:none;margin-top:10px">
+        Hoja del libro: <select id="sheetSelect"></select>
+      </div>
+      <div class="messages" id="dataMessages"></div>
+    </div>
+
+    <div class="card" id="dataConfigCard" style="display:none">
+      <h2>Revisa las variables</h2>
+      <p class="hint">AnalizaR detectó automáticamente el tipo de cada columna. Ajusta si hace falta:
+        una variable numérica con pocos valores enteros (p. ej. un código de tratamiento) suele convenir marcarla como <b>categórica</b>.</p>
+      <div id="dataSummary" class="results-summary"></div>
+      <div class="col-config" id="colConfig"></div>
+      <button class="btn btn-primary btn-lg" id="loadDataBtn">Cargar datos →</button>
+      <button class="btn btn-primary btn-lg" id="goDescBtn" style="display:none;margin-left:8px">Ir a Descriptiva →</button>
+    </div>
+
+    <div class="card" id="dataPreviewCard" style="display:none">
+      <h2>Vista previa</h2>
+      <p class="hint">⌗ numérica · ⌸ categórica · ∅ excluida</p>
+      <div class="table-scroll" id="dataPreview"></div>
+    </div>
+  </section>
+
+  <!-- ============ PASO 2: DESCRIPTIVA ============ -->
+  <section class="step-panel" id="panel-2">
+    <div class="card">
+      <h2>2. Estadística descriptiva</h2>
+      <p class="hint">El cálculo corre en Python dentro de tu navegador (Pyodide). La primera vez tarda ~1 min en cargar.</p>
+      <div class="config-group">
+        <h3>Variables numéricas a resumir</h3>
+        <div class="checkbox-grid" id="descVars"></div>
+        <label class="inline-label" style="margin-top:8px">Desglosar por grupo:
+          <select id="descGroup"></select></label>
+        <button class="btn btn-secondary" id="descRecalcBtn" style="margin-left:10px">Actualizar</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="results-header">
+        <h2>Resumen numérico</h2>
+        <button class="btn btn-secondary" id="dlDescCsv">⬇ CSV</button>
+      </div>
+      <div class="table-scroll" id="descTable"></div>
+    </div>
+
+    <div class="card">
+      <h2>Normalidad rápida (Shapiro-Wilk)</h2>
+      <p class="hint">Un primer vistazo. Los supuestos completos (con gráficos para tesis) están en el Bloque 3.</p>
+      <div class="table-scroll" id="normQuickTable"></div>
+    </div>
+
+    <div class="card">
+      <div class="results-header">
+        <h2>Frecuencias de una variable categórica</h2>
+        <label class="inline-label">Variable <select id="freqCol"></select></label>
+      </div>
+      <p class="hint" id="freqSummary"></p>
+      <div class="table-scroll" id="freqTable"></div>
+    </div>
+
+    <div class="card">
+      <h2>Datos faltantes</h2>
+      <div class="table-scroll" id="missingTable"></div>
+    </div>
+
+    <!-- ESTUDIO DE GRAFICAS -->
+    <div class="card">
+      <h2>Estudio de gráficas</h2>
+      <p class="hint">Elige el tipo de gráfico y edítalo en vivo. Exporta en PNG de alta resolución, o en PDF/SVG vectorial para revistas.</p>
+      <label class="inline-label" style="font-size:1rem">Tipo de gráfico
+        <select id="plotKind" style="min-width:280px"></select>
+      </label>
+      <div class="plot-studio">
+        <div class="plot-panel" id="plotOptions"></div>
+        <div class="plot-out">
+          <div class="plot-canvas" id="plotCanvas"><p class="hint">Configura el gráfico…</p></div>
+          <div class="messages" id="descMessages"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <p class="hint">Bloques 3 a 6 (supuestos, regresión, correlación y multivariado) se irán habilitando en las siguientes entregas.</p>
+    </div>
+  </section>
+
+  <!-- ============ PASOS 3-6: PENDIENTES ============ -->
+  <!-- ============ PASO 3: SUPUESTOS DEL ANOVA ============ -->
+  <section class="step-panel" id="panel-3">
+    <div class="card">
+      <h2>3. Supuestos del análisis de varianza</h2>
+      <p class="hint">El ANOVA (y cualquier modelo lineal) supone que los <b>residuales</b> son
+        <b>independientes</b>, tienen <b>varianza constante</b> (homocedasticidad) y siguen una
+        <b>distribución normal</b>. Aquí ajustamos tu modelo y comprobamos los tres supuestos con
+        pruebas formales y figuras listas para tesis.</p>
+
+      <div class="config-group">
+        <label class="inline-label" style="font-size:0.95rem">Variable respuesta (Y, numérica)
+          <select id="a3Resp"></select></label>
+      </div>
+      <div class="config-group">
+        <h3>Factores (grupos / tratamientos)</h3>
+        <div class="checkbox-grid" id="a3Factors"></div>
+        <label class="checkbox-label" id="a3InterWrap" style="display:none;margin-top:6px">
+          <input type="checkbox" id="a3Inter" checked> Incluir interacción entre factores
+        </label>
+      </div>
+      <div class="config-group">
+        <label class="inline-label">Tema de las figuras <select id="a3Theme"></select></label>
+        <label class="inline-label" style="margin-left:14px">DPI de exportación
+          <select id="a3Dpi"><option>150</option><option selected>300</option><option>450</option><option>600</option></select></label>
+      </div>
+      <button class="btn btn-primary btn-lg" id="a3RunBtn">Analizar supuestos →</button>
+      <div class="messages" id="a3Messages"></div>
+    </div>
+
+    <div id="a3Results" style="display:none">
+      <div class="card">
+        <h2>Modelo ajustado (contexto)</h2>
+        <p class="hint">La prueba de hipótesis completa y las comparaciones de medias (Tukey, Duncan) están en el Bloque 4. Aquí sólo se usa el modelo para obtener los residuales.</p>
+        <div id="a3ModelTiles" class="results-summary"></div>
+        <div class="table-scroll" id="a3AnovaTable"></div>
+      </div>
+
+      <div class="card">
+        <h2>Diagnóstico general</h2>
+        <p class="hint">Empieza por aquí: un vistazo rápido a los cuatro gráficos de diagnóstico.</p>
+        <div id="a3Figs" class="fig-gallery"></div>
+      </div>
+
+      <div class="card">
+        <h2>1 · Normalidad de los residuales</h2>
+        <details class="theory"><summary>¿Qué es y por qué importa?</summary>
+          <p>El ANOVA compara medias suponiendo que el error aleatorio se distribuye normalmente.
+          Con muestras grandes el ANOVA es robusto a desviaciones moderadas (teorema del límite central),
+          pero con n pequeño o asimetría fuerte conviene transformar la respuesta o usar una prueba no paramétrica.
+          Shapiro-Wilk es la prueba más potente para n &lt; 50; Anderson-Darling y Lilliefors dan peso a las colas;
+          la asimetría y la curtosis describen <i>cómo</i> se aleja de la normal.</p>
+        </details>
+        <div id="a3NormVerdict" class="verdict-line"></div>
+        <div class="table-scroll" id="a3NormTable"></div>
+        <div id="a3NormGroupWrap" style="display:none">
+          <h3>Normalidad dentro de cada grupo (Shapiro-Wilk)</h3>
+          <div class="table-scroll" id="a3NormGroupTable"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>2 · Homocedasticidad (igualdad de varianzas)</h2>
+        <details class="theory"><summary>¿Qué es y por qué importa?</summary>
+          <p>Si unos grupos varían mucho más que otros, el valor F del ANOVA se distorsiona
+          (sobre todo con grupos desbalanceados). <b>Levene con la mediana</b> (Brown-Forsythe) y
+          <b>Fligner-Killeen</b> son robustas a la no normalidad; <b>Bartlett</b> es potente pero
+          exige normalidad. Como regla práctica, una razón entre la varianza mayor y la menor
+          por debajo de 3–4 suele ser tolerable. Si falla: ANOVA de Welch o Kruskal-Wallis.</p>
+        </details>
+        <div id="a3HomoVerdict" class="verdict-line"></div>
+        <div class="table-scroll" id="a3HomoTable"></div>
+        <h3>Dispersión por grupo</h3>
+        <div class="table-scroll" id="a3SpreadTable"></div>
+      </div>
+
+      <div class="card">
+        <h2>3 · Independencia de los residuales</h2>
+        <details class="theory"><summary>¿Qué es y por qué importa?</summary>
+          <p>Cada observación debe aportar información nueva. Se viola con medidas repetidas sobre
+          el mismo individuo, pseudorréplicas, cercanía espacial o temporal, o efecto de bloque no modelado.
+          <b>Durbin-Watson</b> detecta autocorrelación de primer orden (≈2 = sin autocorrelación);
+          la <b>prueba de rachas</b> y <b>Ljung-Box</b> detectan patrones en el orden de los datos.
+          La mejor defensa es un buen diseño (aleatorización).</p>
+        </details>
+        <div id="a3IndepVerdict" class="verdict-line"></div>
+        <div class="table-scroll" id="a3IndepTable"></div>
+        <p class="hint" id="a3IndepNote"></p>
+      </div>
+
+      <div class="card">
+        <h2>Observaciones influyentes y atípicas</h2>
+        <p class="hint" id="a3InflNote"></p>
+        <div class="table-scroll" id="a3InflTable"></div>
+      </div>
+
+      <div class="card">
+        <h2>Resumen y recomendación</h2>
+        <div id="a3Traffic" class="traffic"></div>
+        <div id="a3RecBox"></div>
+      </div>
+    </div>
+  </section>
+  <!-- ============ PASO 4: REGRESIÓN Y MEDIAS ============ -->
+  <section class="step-panel" id="panel-4">
+    <div class="card">
+      <h2>4. Regresión y comparación de medias</h2>
+      <div class="subtabs">
+        <button class="subtab active" data-tab="reg">Regresión</button>
+        <button class="subtab" data-tab="means">Comparación de medias (Tukey, Duncan…)</button>
+      </div>
+
+      <!-- ---- SUB: REGRESIÓN ---- -->
+      <div class="subtab-panel active" data-tab="reg">
+        <p class="hint">AnalizaR ajusta una batería de modelos (paramétricos y no paramétricos), los compara
+          por error de predicción con validación cruzada y te dice cuál es el mejor y qué tipo de regresión
+          se acopla a tus datos.</p>
+        <div class="config-group">
+          <label class="inline-label" style="font-size:0.95rem">Variable respuesta (Y)
+            <select id="r4Resp"></select></label>
+        </div>
+        <div class="config-group">
+          <h3>Predictores numéricos (X)</h3>
+          <div class="checkbox-grid" id="r4NumX"></div>
+        </div>
+        <div class="config-group">
+          <h3>Predictores categóricos (X)</h3>
+          <div class="checkbox-grid" id="r4CatX"></div>
+        </div>
+        <div class="config-group">
+          <label class="inline-label">Tema de figuras <select id="r4Theme"></select></label>
+          <label class="inline-label" style="margin-left:14px">DPI exportación
+            <select id="r4Dpi"><option>150</option><option selected>300</option><option>450</option><option>600</option></select></label>
+        </div>
+        <button class="btn btn-primary btn-lg" id="r4RunBtn">Ajustar y comparar modelos →</button>
+        <div class="messages" id="r4Messages"></div>
+
+        <div id="r4Results" style="display:none">
+          <div class="card">
+            <h3>Recomendación</h3>
+            <div id="r4RecBox"></div>
+          </div>
+          <div class="card">
+            <div class="results-header">
+              <h3>Comparación de modelos</h3>
+              <button class="btn btn-secondary" id="dlRegCsv">⬇ CSV</button>
+            </div>
+            <p class="hint">Ordenados por RMSE de validación cruzada (5 particiones) — menor es mejor. La fila verde es la recomendada.</p>
+            <div class="table-scroll" id="r4Table"></div>
+            <div id="r4FigCompare" class="fig-box"></div>
+          </div>
+          <div id="r4NestedWrap" class="card" style="display:none">
+            <h3>Pruebas F entre modelos anidados</h3>
+            <p class="hint">¿Vale la pena la complejidad extra? Compara un modelo simple contra uno más flexible.</p>
+            <div class="table-scroll" id="r4NestedTable"></div>
+          </div>
+          <div class="card">
+            <div class="results-header">
+              <h3>Detalle del modelo</h3>
+              <label class="inline-label">Modelo <select id="r4DetailSel"></select></label>
+            </div>
+            <div id="r4DetailTiles" class="results-summary"></div>
+            <div id="r4DetailBox"></div>
+            <div class="fig-gallery">
+              <div class="fig-card"><b>Ajuste</b><div id="r4FigFit"></div></div>
+              <div class="fig-card"><b>Residuales vs. predichos</b><div id="r4FigResid"></div></div>
+              <div class="fig-card"><b>Q–Q de residuales</b><div id="r4FigQQ"></div></div>
+            </div>
+          </div>
+          <div class="card">
+            <details class="theory"><summary>Teoría: ¿qué modelo elegir?</summary>
+              <p><b>R²</b> siempre sube al añadir variables; usa <b>R² ajustado</b>, <b>AIC</b>/<b>BIC</b>
+              (equilibran ajuste y complejidad; menor es mejor) y sobre todo el <b>RMSE de validación cruzada</b>,
+              que mide qué tan bien predice datos nuevos. <b>BIC</b> penaliza más la complejidad que AIC.
+              Las <b>pruebas F</b> entre modelos anidados dicen si los términos extra aportan de forma significativa;
+              las <b>pruebas t</b> de cada coeficiente dicen si esa variable contribuye.
+              Los métodos <b>regularizados</b> (Ridge, Lasso, Elastic Net) sirven con muchas variables o colinealidad;
+              los <b>no paramétricos</b> (LOESS, splines, isotónica, kNN, bosque aleatorio) no imponen una forma
+              y son buenos para explorar; los <b>robustos</b> (Huber, Theil-Sen) resisten valores atípicos;
+              los <b>GLM</b> ajustan la distribución del error (Gamma para respuestas positivas asimétricas,
+              Poisson para conteos).</p>
+            </details>
+          </div>
+        </div>
+      </div>
+
+      <!-- ---- SUB: MEDIAS ---- -->
+      <div class="subtab-panel" data-tab="means">
+        <p class="hint">ANOVA (una o dos vías) + Welch + Kruskal-Wallis, tamaños de efecto, y comparación
+          de medias por parejas con muchos métodos, letras de significancia y gráficos para tesis.</p>
+        <div class="config-group">
+          <label class="inline-label" style="font-size:0.95rem">Variable respuesta (Y)
+            <select id="m4Resp"></select></label>
+        </div>
+        <div class="config-group">
+          <h3>Factores</h3>
+          <div class="checkbox-grid" id="m4Factors"></div>
+          <label class="checkbox-label" id="m4InterWrap" style="display:none;margin-top:6px">
+            <input type="checkbox" id="m4Inter" checked> Incluir interacción</label>
+        </div>
+        <button class="btn btn-primary btn-lg" id="m4RunBtn">Ejecutar ANOVA →</button>
+        <div class="messages" id="m4Messages"></div>
+
+        <div id="m4Results" style="display:none">
+          <div class="card">
+            <h3>ANOVA</h3>
+            <div class="table-scroll" id="m4AnovaTable"></div>
+            <div id="m4Robust"></div>
+          </div>
+          <div class="card">
+            <h3>Tamaño del efecto</h3>
+            <details class="theory"><summary>¿Qué significan η², ω², ε²?</summary>
+              <p><b>η²</b> (eta cuadrada) = proporción de la varianza total explicada por el factor.
+              <b>η² parcial</b> descuenta la varianza de otros factores (útil en diseños de dos vías).
+              <b>ω²</b> (omega) y <b>ε²</b> (épsilon) son estimadores menos sesgados de η², preferidos para
+              publicación. <b>f de Cohen</b>: 0.10 pequeño, 0.25 mediano, 0.40 grande. Un p pequeño con η²
+              pequeño = efecto real pero de poca magnitud práctica.</p>
+            </details>
+            <div class="table-scroll" id="m4EffectTable"></div>
+          </div>
+          <div class="card">
+            <h3>Resumen por grupo</h3>
+            <div class="table-scroll" id="m4GroupTable"></div>
+          </div>
+        </div>
+
+        <div class="card" id="m4PhCard" style="display:none">
+          <h3>Comparación de medias por parejas</h3>
+          <div class="opt-grid" style="grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px 14px">
+            <label>Método
+              <select id="m4Method">
+                <optgroup label="Paramétricos (varianzas iguales)">
+                  <option value="tukey">Tukey HSD</option>
+                  <option value="duncan">Duncan (rangos múltiples)</option>
+                  <option value="snk">Student-Newman-Keuls</option>
+                  <option value="lsd">LSD de Fisher</option>
+                  <option value="bonferroni">Bonferroni</option>
+                  <option value="sidak">Šidák</option>
+                  <option value="holm">Holm</option>
+                  <option value="bh">Benjamini-Hochberg (FDR)</option>
+                  <option value="scheffe">Scheffé</option>
+                </optgroup>
+                <optgroup label="Varianzas desiguales">
+                  <option value="gameshowell">Games-Howell</option>
+                </optgroup>
+                <optgroup label="Contra un control">
+                  <option value="dunnett">Dunnett</option>
+                </optgroup>
+                <optgroup label="No paramétricos (tras Kruskal-Wallis)">
+                  <option value="dunn">Dunn</option>
+                  <option value="conover">Conover-Iman</option>
+                  <option value="nemenyi">Nemenyi</option>
+                  <option value="mannwhitney">U de Mann-Whitney por parejas</option>
+                </optgroup>
+              </select></label>
+            <label>Comparar <select id="m4Comparar"></select></label>
+            <label>α <input type="number" id="m4Alpha" value="0.05" min="0.001" max="0.2" step="0.005"></label>
+            <label id="m4CtrlWrap" style="display:none">Grupo control <select id="m4Ctrl"></select></label>
+            <label id="m4PadjWrap" style="display:none">Ajuste de p
+              <select id="m4Padj"><option value="bonferroni">Bonferroni</option><option value="holm">Holm</option>
+                <option value="bh">Benjamini-Hochberg</option><option value="sidak">Šidák</option><option value="ninguno">ninguno</option></select></label>
+          </div>
+          <p id="m4PhNote" style="margin-top:10px"></p>
+          <div class="two-tables">
+            <div><h4>Letras de significancia</h4><div class="table-scroll" id="m4CldTable"></div>
+              <button class="btn btn-secondary btn-xs" id="dlCldCsv">⬇ CSV letras</button></div>
+            <div><h4>Todas las parejas</h4><div class="table-scroll" id="m4PairTable"></div>
+              <button class="btn btn-secondary btn-xs" id="dlPairsCsv">⬇ CSV parejas</button></div>
+          </div>
+
+          <h4 style="margin-top:20px">Figuras</h4>
+          <div class="opt-grid" style="grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px 12px">
+            <label>Tema <select id="m4Theme"></select></label>
+            <label>Paleta <select id="m4Palette"></select></label>
+            <label>Barra de error <select id="m4Err">
+              <option value="ci95">IC 95%</option><option value="se">Error estándar</option><option value="sd">Desv. estándar</option></select></label>
+            <label>Estilo <select id="m4Style"><option value="point">Puntos</option><option value="bar">Barras</option></select></label>
+            <label>Título <input type="text" id="m4Title" placeholder="(opcional)"></label>
+            <label>Etiqueta Y <input type="text" id="m4Ylab" placeholder="(automático)"></label>
+            <label>DPI <select id="m4Dpi"><option>150</option><option selected>300</option><option>450</option><option>600</option></select></label>
+          </div>
+          <div class="fig-gallery">
+            <div class="fig-card"><b>Medias con letras de significancia</b><p class="hint">La figura clave para tesis: grupos que comparten letra no difieren.</p><div id="m4FigCld"></div></div>
+            <div class="fig-card"><b>Diferencias por parejas (IC)</b><div id="m4FigTukey"></div></div>
+            <div class="fig-card"><b>Cajas con marcas de significancia</b><div id="m4FigBox"></div></div>
+            <div class="fig-card" id="m4InterFigWrap" style="display:none"><b>Gráfico de interacción</b><div id="m4FigInter"></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+  <!-- ============ PASO 5: CORRELACIÓN ============ -->
+  <section class="step-panel" id="panel-5">
+    <div class="card">
+      <h2>5. Análisis de correlación</h2>
+      <div class="subtabs">
+        <button class="subtab active" data-tab="mat">Matriz</button>
+        <button class="subtab" data-tab="par">Par (detalle)</button>
+        <button class="subtab" data-tab="parc">Parcial y semiparcial</button>
+        <button class="subtab" data-tab="cat">Categóricas</button>
+        <button class="subtab" data-tab="cca">Canónica</button>
+      </div>
+      <div class="messages" id="c5Messages"></div>
+
+      <!-- MATRIZ -->
+      <div class="subtab-panel active" data-tab="mat">
+        <div class="config-group">
+          <h3>Variables numéricas</h3>
+          <div class="checkbox-grid" id="c5Vars"></div>
+        </div>
+        <div class="opt-grid" style="grid-template-columns:repeat(auto-fill,minmax(160px,1fr))">
+          <label>Método
+            <select id="c5Method"><option value="pearson">Pearson (lineal)</option>
+              <option value="spearman">Spearman (monótona)</option><option value="kendall">Kendall τ-b</option></select></label>
+          <label>Ajuste de p
+            <select id="c5Padj"><option value="holm">Holm</option><option value="bh">Benjamini-Hochberg</option>
+              <option value="bonferroni">Bonferroni</option><option value="sidak">Šidák</option><option value="ninguno">ninguno</option></select></label>
+          <label>Tema figuras <select id="c5Theme"></select></label>
+          <label>DPI <select id="c5Dpi"><option>150</option><option selected>300</option><option>450</option><option>600</option></select></label>
+          <label class="ck"><input type="checkbox" id="c5Cluster" checked> Ordenar por conglomerados</label>
+          <label>Mostrar <select id="c5Mask"><option value="none">matriz completa</option><option value="upper">sólo triángulo inferior</option><option value="lower">sólo triángulo superior</option></select></label>
+          <label>Red: |r| mínimo <input type="number" id="c5NetThr" value="0.3" min="0.1" max="0.95" step="0.05"></label>
+          <label>Color pares por <select id="c5PairsGroup"></select></label>
+        </div>
+        <button class="btn btn-primary btn-lg" id="c5RunMatrix">Calcular matriz →</button>
+
+        <div id="c5MatrixResults" style="display:none">
+          <p class="hint" id="c5MatrixNote" style="margin-top:12px"></p>
+          <div class="fig-gallery">
+            <div class="fig-card"><b>Mapa de calor</b><div id="c5FigHeat"></div></div>
+            <div class="fig-card"><b>Corrplot (círculos)</b><div id="c5FigCorrplot"></div></div>
+            <div class="fig-card"><b>Red de correlaciones</b><div id="c5FigNet"></div></div>
+            <div class="fig-card"><b>Matriz de dispersión</b><div id="c5FigPairs"></div></div>
+          </div>
+          <div class="results-header"><h3>Todas las parejas</h3><button class="btn btn-secondary" id="dlCorrCsv">⬇ CSV</button></div>
+          <div class="table-scroll" id="c5PairTable"></div>
+        </div>
+      </div>
+
+      <!-- PAR -->
+      <div class="subtab-panel" data-tab="par">
+        <p class="hint">Análisis a fondo de <b>dos</b> variables: los tres coeficientes con IC, la
+          <b>correlación de distancia</b> (detecta cualquier tipo de dependencia, incluso no monótona) y
+          un diagrama con recta de ajuste, elipses de confianza e histogramas marginales.</p>
+        <div class="opt-grid" style="grid-template-columns:repeat(auto-fill,minmax(160px,1fr))">
+          <label>Variable X <select id="c5PairX"></select></label>
+          <label>Variable Y <select id="c5PairY"></select></label>
+          <label>Color por grupo <select id="c5PairGroup"></select></label>
+        </div>
+        <button class="btn btn-primary btn-lg" id="c5RunPair">Analizar par →</button>
+        <div class="messages" id="c5PairMsg"></div>
+        <div id="c5PairResults" style="display:none">
+          <div class="table-scroll" id="c5PairTestTable" style="margin-top:12px"></div>
+          <p id="c5PairNote"></p>
+          <div class="fig-box" id="c5FigPair"></div>
+        </div>
+      </div>
+
+      <!-- PARCIAL -->
+      <div class="subtab-panel" data-tab="parc">
+        <details class="theory"><summary>¿Correlación parcial y semiparcial?</summary>
+          <p>La <b>correlación parcial</b> entre A y B controla el efecto de las demás variables en <i>ambas</i>:
+          revela si una asociación fuerte es espuria (producida por una tercera variable). La
+          <b>semiparcial</b> quita el efecto de las demás sólo de <i>una</i> de las dos: su cuadrado es la
+          varianza que un predictor explica de forma <b>única</b> (lo que aporta más allá del resto).</p>
+        </details>
+        <h3>Correlación parcial (controlando todas las demás)</h3>
+        <div class="opt-grid" style="grid-template-columns:repeat(auto-fill,minmax(160px,1fr))">
+          <label>Método <select id="c5PartMethod"><option value="pearson">Pearson</option><option value="spearman">Spearman (rangos)</option></select></label>
+        </div>
+        <button class="btn btn-primary" id="c5RunPartial">Calcular parcial →</button>
+        <div id="c5PartResults" style="display:none">
+          <p class="hint" id="c5PartNote" style="margin-top:10px"></p>
+          <div class="fig-box" id="c5FigPartHeat"></div>
+          <div class="table-scroll" id="c5PartTable"></div>
+        </div>
+        <hr style="margin:22px 0;border:none;border-top:1px solid var(--border)">
+        <h3>Correlación semiparcial (varianza única de cada predictor)</h3>
+        <div class="opt-grid" style="grid-template-columns:repeat(auto-fill,minmax(160px,1fr))">
+          <label>Variable objetivo <select id="c5SpTarget"></select></label>
+        </div>
+        <p class="hint">Predictores:</p>
+        <div class="checkbox-grid" id="c5SpOthers"></div>
+        <button class="btn btn-primary" id="c5RunSp">Calcular semiparcial →</button>
+        <div id="c5SpResults" style="display:none">
+          <p class="hint" id="c5SpNote" style="margin-top:10px"></p>
+          <div class="table-scroll" id="c5SpTable"></div>
+        </div>
+      </div>
+
+      <!-- CATEGÓRICAS -->
+      <div class="subtab-panel" data-tab="cat">
+        <p class="hint">Asociación cuando hay variables categóricas: <b>η</b> (razón de correlación) y
+          <b>r biserial-puntual</b> para numérica × categórica; <b>V de Cramér</b> corregida y
+          <b>U de Theil</b> para categórica × categórica.</p>
+        <button class="btn btn-primary btn-lg" id="c5RunCat">Medir asociaciones →</button>
+        <div id="c5CatResults" style="display:none">
+          <div class="table-scroll" id="c5CatTable" style="margin-top:12px"></div>
+        </div>
+      </div>
+
+      <!-- CANÓNICA -->
+      <div class="subtab-panel" data-tab="cca">
+        <details class="theory"><summary>¿Correlación canónica?</summary>
+          <p>Generaliza la correlación a <b>dos conjuntos</b> de variables. Busca la combinación lineal
+          del grupo X y la del grupo Y que estén lo más correlacionadas posible (dimensión 1), luego otra
+          independiente (dimensión 2), etc. El test de <b>Wilks</b> dice cuántas dimensiones son
+          significativas; las <b>cargas canónicas</b> dicen qué variables pesan en cada eje; la
+          <b>redundancia</b> es la varianza de un grupo explicada por el otro.</p>
+        </details>
+        <div class="two-tables">
+          <div><h3>Grupo X</h3><div class="checkbox-grid" id="c5CcaX"></div></div>
+          <div><h3>Grupo Y</h3><div class="checkbox-grid" id="c5CcaY"></div></div>
+        </div>
+        <div class="opt-grid" style="grid-template-columns:repeat(auto-fill,minmax(160px,1fr))">
+          <label>Color por grupo <select id="c5CcaGroup"></select></label>
+          <label>Dimensión a graficar <select id="c5CcaDim"></select></label>
+        </div>
+        <button class="btn btn-primary btn-lg" id="c5RunCca">Ejecutar correlación canónica →</button>
+        <div class="messages" id="c5CcaMsg"></div>
+        <div id="c5CcaResults" style="display:none">
+          <p class="hint" id="c5CcaNote" style="margin-top:10px"></p>
+          <h3>Dimensiones canónicas</h3>
+          <div class="table-scroll" id="c5CcaDimTable"></div>
+          <div class="two-tables">
+            <div><h4>Cargas del grupo X</h4><div class="table-scroll" id="c5CcaLxTable"></div></div>
+            <div><h4>Cargas del grupo Y</h4><div class="table-scroll" id="c5CcaLyTable"></div></div>
+          </div>
+          <div class="fig-gallery">
+            <div class="fig-card"><b>Variates canónicas</b><div id="c5FigCca"></div></div>
+            <div class="fig-card"><b>Cargas canónicas</b><div id="c5FigCcaLoad"></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+  <!-- ============ PASO 6: MULTIVARIADO ============ -->
+  <section class="step-panel" id="panel-6">
+    <div class="card">
+      <h2>6. Análisis multivariado</h2>
+      <div class="subtabs">
+        <button class="subtab active" data-tab="rec">Recomendación</button>
+        <button class="subtab" data-tab="fac">Factorial (PCA / FA / AFDM / ACM)</button>
+        <button class="subtab" data-tab="clu">Clustering</button>
+      </div>
+      <div class="config-group">
+        <div class="two-tables">
+          <div><h3>Variables numéricas</h3><div class="checkbox-grid" id="m6Nums"></div></div>
+          <div><h3>Variables categóricas</h3><div class="checkbox-grid" id="m6Cats"></div></div>
+        </div>
+        <div class="opt-grid" style="grid-template-columns:repeat(auto-fill,minmax(150px,1fr));margin-top:10px">
+          <label>Tema figuras <select id="m6Theme"></select></label>
+          <label>Paleta <select id="m6Palette"></select></label>
+          <label>DPI <select id="m6Dpi"><option>150</option><option selected>300</option><option>450</option><option>600</option></select></label>
+        </div>
+      </div>
+      <div class="messages" id="m6Msg"></div>
+
+      <!-- RECOMENDACIÓN -->
+      <div class="subtab-panel active" data-tab="rec">
+        <p class="hint">AnalizaR revisa tus datos (tipo de variables, factorabilidad con KMO y Bartlett,
+          tendencia de agrupamiento con Hopkins) y sugiere qué análisis multivariado encaja mejor.
+          Al final tú decides.</p>
+        <button class="btn btn-primary btn-lg" id="m6RunRec">Diagnosticar datos →</button>
+        <div id="m6RecResults" style="display:none">
+          <div id="m6RecTiles" class="results-summary"></div>
+          <div id="m6RecBox"></div>
+          <div id="m6KmoWrap" style="display:none"><h4>KMO por variable</h4><div class="table-scroll" id="m6KmoTable"></div>
+            <p class="hint">KMO &lt; 0.5 en una variable = candidata a excluirse del PCA.</p></div>
+        </div>
+      </div>
+
+      <!-- FACTORIAL -->
+      <div class="subtab-panel" data-tab="fac">
+        <div class="opt-grid" style="grid-template-columns:repeat(auto-fill,minmax(170px,1fr))">
+          <label>Método
+            <select id="m6Method">
+              <option value="PCA">PCA (componentes principales)</option>
+              <option value="FA">Análisis factorial exploratorio</option>
+              <option value="FAMD">AFDM / FAMD (datos mixtos)</option>
+              <option value="MCA">ACM / MCA (categóricas)</option>
+            </select></label>
+          <span id="m6PcaOpts" style="display:flex;flex-direction:column;gap:4px"><label>Dimensiones a calcular <input type="number" id="m6Ncomp" value="5" min="2" max="15"></label></span>
+          <span id="m6FaOpts" style="display:none;flex-direction:column;gap:4px"><label>Nº de factores <input type="number" id="m6Nfac" value="2" min="1" max="10"></label></span>
+        </div>
+        <button class="btn btn-primary btn-lg" id="m6RunFactor">Ejecutar →</button>
+
+        <div id="m6FactorResults" style="display:none">
+          <p class="hint" id="m6FactorNote" style="margin-top:12px"></p>
+          <div id="m6CritBox"></div>
+          <div id="m6EigWrap" style="display:none"><h3>Autovalores / inercia</h3><div class="table-scroll" id="m6EigTable"></div></div>
+
+          <div class="config-group" style="margin-top:14px">
+            <div class="opt-grid" style="grid-template-columns:repeat(auto-fill,minmax(150px,1fr))">
+              <label>Ejes a graficar <select id="m6Axes"></select></label>
+              <label>Color individuos por <select id="m6Group"></select></label>
+              <label class="ck"><input type="checkbox" id="m6Ellipse" checked> Elipses</label>
+              <label>Tipo de elipse <select id="m6EllipseKind"><option value="conf">confianza de la media</option><option value="conc">concentración (95% de puntos)</option></select></label>
+              <label>Color círculo por <select id="m6CircleColor"><option value="cos2">calidad (cos²)</option><option value="contrib">contribución</option></select></label>
+              <label>Dim para contribución <select id="m6ContribDim"></select></label>
+            </div>
+          </div>
+
+          <div class="fig-gallery">
+            <div class="fig-card"><b>Sedimentación</b><div id="m6FigScree"></div></div>
+            <div class="fig-card"><b>Círculo de correlaciones</b><div id="m6FigCircle"></div></div>
+            <div class="fig-card"><b>Mapa de individuos</b><div id="m6FigInd"></div></div>
+            <div class="fig-card"><b>Biplot</b><div id="m6FigBiplot"></div></div>
+            <div class="fig-card"><b>Contribución de variables</b><div id="m6FigContrib"></div></div>
+            <div class="fig-card" id="m6FaLoadWrap"><b>Cargas factoriales</b><div id="m6FigFa"></div></div>
+          </div>
+
+          <h3>Cargas / coordenadas de variables</h3>
+          <div class="table-scroll" id="m6LoadTable"></div>
+          <div id="m6DimDescWrap" style="display:none"><h3>Descripción de las dimensiones</h3><div id="m6DimDesc"></div></div>
+          <button class="btn btn-secondary" id="dlScoresCsv" style="margin-top:10px">⬇ CSV coordenadas de individuos</button>
+        </div>
+      </div>
+
+      <!-- CLUSTERING -->
+      <div class="subtab-panel" data-tab="clu">
+        <div class="opt-grid" style="grid-template-columns:repeat(auto-fill,minmax(170px,1fr))">
+          <label>Datos de entrada
+            <select id="cl6Source"><option value="pca">componentes del PCA</option><option value="raw">variables estandarizadas</option></select></label>
+          <label>Nº de dimensiones (si PCA) <input type="number" id="cl6Ndims" value="3" min="2" max="10"></label>
+          <label class="ck"><input type="checkbox" id="cl6Std" checked> Estandarizar</label>
+          <label>k máximo a explorar <input type="number" id="cl6Kmax" value="8" min="3" max="12"></label>
+          <label>Paleta <select id="cl6Palette"><option>AnalizaR</option><option>Vivo</option><option>Okabe-Ito</option><option>Set2</option><option>Dark2</option></select></label>
+          <label>DPI <select id="cl6Dpi"><option>150</option><option selected>300</option><option>450</option><option>600</option></select></label>
+        </div>
+        <button class="btn btn-primary btn-lg" id="cl6Prep">Preparar y explorar →</button>
+        <div class="messages" id="cl6Msg"></div>
+
+        <div id="cl6Results" style="display:none">
+          <div class="card">
+            <h3>Tendencia de agrupamiento</h3>
+            <div id="cl6TendBox"></div>
+            <div class="fig-box" id="cl6FigVat"></div>
+          </div>
+          <div class="card">
+            <h3>Número óptimo de clusters</h3>
+            <div id="cl6OptBox"></div>
+            <div class="table-scroll" id="cl6OptTable"></div>
+            <div class="fig-box" id="cl6FigOpt"></div>
+          </div>
+          <div class="card">
+            <h3>Ejecutar el agrupamiento</h3>
+            <div class="opt-grid" style="grid-template-columns:repeat(auto-fill,minmax(160px,1fr))">
+              <label>Método
+                <select id="cl6Method">
+                  <optgroup label="Jerárquico">
+                    <option value="ward">Ward</option><option value="completo">Enlace completo</option>
+                    <option value="promedio">Enlace promedio (UPGMA)</option><option value="simple">Enlace simple</option>
+                    <option value="centroide">Centroide</option>
+                  </optgroup>
+                  <optgroup label="Particional">
+                    <option value="kmeans">k-means</option><option value="pam">PAM (k-medoides)</option>
+                    <option value="fuzzy">Difuso (c-means)</option>
+                  </optgroup>
+                  <optgroup label="Basado en modelo / densidad / grafo">
+                    <option value="gmm">Mezcla gaussiana (GMM)</option>
+                    <option value="dbscan">DBSCAN</option>
+                    <option value="spectral">Espectral</option>
+                  </optgroup>
+                </select></label>
+              <label id="cl6KWrap">k <input type="number" id="cl6K" value="3" min="2" max="15"></label>
+              <span id="cl6DbscanOpts" style="display:none;gap:8px">
+                <label>eps <input type="number" id="cl6Eps" value="1.5" step="0.1"></label>
+                <label>mín. puntos <input type="number" id="cl6MinPts" value="5" min="2"></label>
+              </span>
+              <label>Comparar con grupo <select id="cl6Group"></select></label>
+              <label class="ck"><input type="checkbox" id="cl6Ellipse" checked> Elipses en el mapa</label>
+              <label>Tipo de elipse <select id="cl6EllipseKind"><option value="conf">confianza</option><option value="conc">concentración</option></select></label>
+            </div>
+            <button class="btn btn-primary" id="cl6Run">Agrupar →</button>
+          </div>
+
+          <div id="cl6FitResults" style="display:none">
+            <div class="card">
+              <h3>Resultado y validación</h3>
+              <div class="two-tables">
+                <div><h4>Tamaño de los clusters</h4><div class="table-scroll" id="cl6SizeTable"></div></div>
+                <div><h4>Índices de validación</h4><div id="cl6ValBox"></div></div>
+              </div>
+            </div>
+            <div class="card">
+              <h3>Visualización</h3>
+              <div class="fig-gallery">
+                <div class="fig-card"><b>Clusters en el plano principal</b><div id="cl6FigScatter"></div></div>
+                <div class="fig-card"><b>Gráfico de silueta</b><div id="cl6FigSil"></div></div>
+                <div class="fig-card"><b>Dendrograma</b><div id="cl6FigDendro"></div></div>
+                <div class="fig-card"><b>Perfil (mapa de calor)</b><div id="cl6FigProfHeat"></div></div>
+                <div class="fig-card"><b>Perfil (coordenadas paralelas)</b><div id="cl6FigProfPar"></div></div>
+                <div class="fig-card" id="cl6CompareWrap" style="display:none"><b>Clusters vs. grupo real</b><div id="cl6FigCompare"></div></div>
+              </div>
+            </div>
+            <div class="card">
+              <h3>Perfil de los clusters</h3>
+              <p class="hint" id="cl6ProfNote"></p>
+              <div class="table-scroll" id="cl6ProfTable"></div>
+              <button class="btn btn-secondary" id="dlClustCsv" style="margin-top:10px">⬇ CSV con la asignación de cluster</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer class="app-footer">
+  <p>AnalizaR — todo el procesamiento es local, en tu navegador. Ningún dato se sube a servidores.</p>
+</footer>
+
+<div id="spinner" class="spinner-overlay" style="display:none">
+  <div class="spinner-box"><div class="spinner"></div><p id="spinnerText">Trabajando…</p></div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="js/core.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/pyodide-core.js"></script>
+<script src="js/descriptive.py.js"></script>
+<script src="js/assumptions.py.js"></script>
+<script src="js/regression.py.js"></script>
+<script src="js/means.py.js"></script>
+<script src="js/correlation.py.js"></script>
+<script src="js/multivariate.py.js"></script>
+<script src="js/clustering.py.js"></script>
+<script src="js/data.js"></script>
+<script src="js/descriptive.js"></script>
+<script src="js/assumptions.js"></script>
+<script src="js/block4.js"></script>
+<script src="js/means.js"></script>
+<script src="js/correlation.js"></script>
+<script src="js/block6.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>
