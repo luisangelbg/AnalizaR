@@ -276,7 +276,7 @@ def _ellipse(ax, pts, color, kind='conf', alpha=0.15):
     ax.add_patch(Ellipse(mu, w, h, angle=ang, facecolor=color, edgecolor=color, alpha=alpha, lw=1.5))
 
 def factor_fig(kind, fmt='png', dpi=140, theme='StatsPro', opts_json='{}'):
-    o = json.loads(opts_json); apply_theme(theme)
+    o = json.loads(opts_json); apply_theme(theme, o.get('font'), float(o.get('font_scale', 1.0)), o.get('grid'))
     ev = V['ev']; pct = V['pct']; scores = V['scores']; load = V['load']; colinfo = V['colinfo']
     ax_i, ax_j = [int(x) - 1 for x in o.get('axes', '1,2').split(',')]
     pal = o.get('palette', 'StatsPro')
@@ -366,5 +366,6 @@ def factor_fig(kind, fmt='png', dpi=140, theme='StatsPro', opts_json='{}'):
         ax.set_title(o.get('title') or 'Cargas factoriales (rotación varimax)'); ax.grid(False)
 
     fig.tight_layout()
+    finish_common(fig, o)
     return fig_to_uri(fig, fmt, int(dpi))
 `;

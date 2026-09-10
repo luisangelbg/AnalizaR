@@ -222,7 +222,7 @@ def _ell(ax, pts, color, kind='conf'):
     ax.add_patch(Ellipse(mu, w, h, angle=ang, facecolor=color, edgecolor=color, alpha=.15, lw=1.5))
 
 def clust_fig(kind, fmt='png', dpi=140, theme='StatsPro', opts_json='{}'):
-    o = json.loads(opts_json); apply_theme(theme)
+    o = json.loads(opts_json); apply_theme(theme, o.get('font'), float(o.get('font_scale', 1.0)), o.get('grid'))
     X = G['X']; D = G['D']; pal = o.get('palette', 'StatsPro')
     fig, ax = plt.subplots(figsize=(float(o.get('w', 7.2)), float(o.get('h', 5.4))))
 
@@ -328,5 +328,6 @@ def clust_fig(kind, fmt='png', dpi=140, theme='StatsPro', opts_json='{}'):
         ax.set_xlabel(g); ax.set_ylabel('cluster'); ax.grid(False)
 
     fig.tight_layout()
+    finish_common(fig, o)
     return fig_to_uri(fig, fmt, int(dpi))
 `;

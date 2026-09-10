@@ -27,6 +27,9 @@ async function getPyodide() {
       ['numpy', 'pandas', 'scipy', 'matplotlib'].forEach(p => _loadedPkgs.add(p));
       setSpinner('Preparando entorno grafico…');
       pyodide.runPython(PY_SETUP);
+      setSpinner('Cargando tipografias de alta calidad…');
+      try { await pyodide.runPythonAsync(PY_FONTS); }
+      catch (e) { console.warn('No se pudieron cargar las tipografias web; se usan las del sistema.', e); }
       window.__pyodide = pyodide;
       return pyodide;
     } finally { hideSpinner(); }
@@ -105,7 +108,15 @@ def palette_colors(name, n):
     return [matplotlib.colors.to_hex(cmap(i/(n-1))) for i in range(n)]
 
 # ---------------- temas ----------------
-def apply_theme(t):
+FONT_MAP = {
+    'Inter': 'Inter', 'Lora': 'Lora', 'JetBrains Mono': 'JetBrains Mono',
+    'DejaVu Sans': 'DejaVu Sans', 'DejaVu Serif': 'DejaVu Serif',
+    'STIX': 'STIXGeneral', 'Monoespaciada': 'monospace',
+}
+_RC_SCALABLE = ['font.size', 'axes.titlesize', 'axes.labelsize', 'legend.fontsize',
+                'xtick.labelsize', 'ytick.labelsize']
+
+def apply_theme(t, font=None, font_scale=1.0, grid=None):
     plt.rcParams.update(matplotlib.rcParamsDefault)
     base = dict({
         'figure.facecolor':'white','axes.facecolor':'white','savefig.facecolor':'white',
@@ -115,9 +126,12 @@ def apply_theme(t):
         'axes.edgecolor':'#3A3F47','axes.linewidth':0.9,
         'axes.spines.top':False,'axes.spines.right':False,
         'figure.dpi':110,'savefig.bbox':'tight','savefig.pad_inches':0.2,
+        'font.family': 'Inter' if 'Inter' in FONTS_OK else 'DejaVu Sans',
+        'svg.fonttype':'none', 'pdf.fonttype':42,
     })
     if t == 'Publicacion':
-        base.update({'axes.grid':False,'font.family':'serif','axes.titleweight':'normal',
+        base.update({'axes.grid':False,'font.family':('Lora' if 'Lora' in FONTS_OK else 'DejaVu Serif'),
+                     'axes.titleweight':'normal',
                      'axes.edgecolor':'#000000','axes.linewidth':1.0,'xtick.direction':'in','ytick.direction':'in'})
     elif t == 'Minimal':
         base.update({'axes.edgecolor':'#8A9099','axes.linewidth':0.7,'grid.alpha':0.18})
@@ -131,14 +145,80 @@ def apply_theme(t):
                      'axes.spines.top':True,'axes.spines.right':True,'axes.edgecolor':'#C2C7CE'})
     elif t == 'Clasico':
         base.update({'axes.grid':False,'axes.spines.top':True,'axes.spines.right':True})
+    if font:
+        base['font.family'] = FONT_MAP.get(font, font)
+    if grid is not None:
+        base['axes.grid'] = bool(grid)
     plt.rcParams.update(base)
+    fs = float(font_scale or 1.0)
+    if fs != 1.0:
+        for k in _RC_SCALABLE:
+            plt.rcParams[k] = plt.rcParams[k] * fs
 
+FONTS_OK = set()
 apply_theme('StatsPro')
+
+# ---------------- acabado comun de figuras (leyenda, titulo, cuadricula) ----------------
+def finish_common(fig, opts):
+    """Aplica ajustes de edicion universales a una figura ya construida, antes de exportarla.
+    opts (dict): legend_show (bool|None), legend_pos (str|None), grid (bool|None), title (str|None)."""
+    opts = opts or {}
+    if opts.get('title'):
+        fig.suptitle(opts['title'], fontweight='bold')
+    for ax in fig.get_axes():
+        lg = ax.get_legend()
+        if opts.get('legend_show') is False:
+            if lg is not None: lg.remove()
+        elif opts.get('legend_pos') and lg is not None:
+            handles, labels = ax.get_legend_handles_labels()
+            if handles:
+                title = lg.get_title().get_text() or None
+                fs = lg.get_texts()[0].get_fontsize() if lg.get_texts() else plt.rcParams['legend.fontsize']
+                pos = opts['legend_pos']
+                if pos == 'fuera':
+                    ax.legend(handles, labels, title=title, fontsize=fs, loc='center left', bbox_to_anchor=(1.02, 0.5))
+                else:
+                    ax.legend(handles, labels, title=title, fontsize=fs, loc=pos)
+        if opts.get('grid') is False:
+            ax.grid(False)
+        elif opts.get('grid') is True:
+            ax.grid(True, alpha=.3)
+    return fig
+
+_FONT_FILES = {}  # familia -> {'Regular': ruta_ttf, 'Bold': ruta_ttf, 'Italic': ruta_ttf}
+
+def _svg_embed_font(svg_text):
+    """Incrusta la tipografia web activa dentro del propio SVG (@font-face en base64),
+    para que el archivo se vea igual en cualquier visor, sin depender de que esa
+    fuente este instalada en la computadora donde se abra."""
+    fam = plt.rcParams.get('font.family')
+    fam = fam[0] if isinstance(fam, list) else fam
+    files = _FONT_FILES.get(fam)
+    if not files: return svg_text
+    faces = []
+    for style, path in files.items():
+        try:
+            with open(path, 'rb') as f: data = f.read()
+            b64 = base64.b64encode(data).decode()
+            weight = '700' if style == 'Bold' else '400'
+            fstyle = 'italic' if style == 'Italic' else 'normal'
+            faces.append("@font-face{font-family:'%s';font-weight:%s;font-style:%s;"
+                         "src:url(data:font/ttf;base64,%s) format('truetype');}" % (fam, weight, fstyle, b64))
+        except Exception:
+            pass
+    if not faces: return svg_text
+    css = '<defs><style type="text/css">' + ''.join(faces) + '</style></defs>'
+    i = svg_text.find('>', svg_text.find('<svg'))
+    if i == -1: return svg_text
+    return svg_text[:i + 1] + css + svg_text[i + 1:]
 
 def fig_to_uri(fig, fmt='png', dpi=140):
     buf = io.BytesIO()
     if fmt == 'svg':
-        fig.savefig(buf, format='svg'); mime='image/svg+xml'
+        fig.savefig(buf, format='svg'); mime = 'image/svg+xml'
+        plt.close(fig)
+        txt = _svg_embed_font(buf.getvalue().decode('utf-8'))
+        return 'data:%s;base64,%s' % (mime, base64.b64encode(txt.encode('utf-8')).decode())
     elif fmt == 'pdf':
         fig.savefig(buf, format='pdf'); mime='application/pdf'
     else:
@@ -173,6 +253,65 @@ def load_data(json_str, roles_json):
 def DF(): return _STATE['df']
 def NUM(): return _STATE.get('num', [])
 def CAT(): return _STATE.get('cat', [])
+`;
+
+/* Tipografias reales descargadas una sola vez (TTF de Fontsource via jsDelivr) y registradas
+   en matplotlib, para que las figuras (PNG, SVG y PDF) se vean con tipografia profesional en
+   vez de la generica del sistema. Si falla (sin internet, CDN bloqueado) se sigue usando
+   DejaVu Sans/Serif — matplotlib no se rompe, solo se ve menos pulido. */
+const PY_FONTS = String.raw`
+import matplotlib.font_manager as fm
+from pyodide.http import pyfetch
+
+_FONT_SRC = {
+    'Inter': {
+        'Regular': 'https://cdn.jsdelivr.net/fontsource/fonts/inter@latest/latin-400-normal.ttf',
+        'Bold':    'https://cdn.jsdelivr.net/fontsource/fonts/inter@latest/latin-700-normal.ttf',
+        'Italic':  'https://cdn.jsdelivr.net/fontsource/fonts/inter@latest/latin-400-italic.ttf',
+    },
+    'Lora': {
+        'Regular': 'https://cdn.jsdelivr.net/fontsource/fonts/lora@latest/latin-400-normal.ttf',
+        'Bold':    'https://cdn.jsdelivr.net/fontsource/fonts/lora@latest/latin-700-normal.ttf',
+        'Italic':  'https://cdn.jsdelivr.net/fontsource/fonts/lora@latest/latin-400-italic.ttf',
+    },
+    'JetBrains Mono': {
+        'Regular': 'https://cdn.jsdelivr.net/fontsource/fonts/jetbrains-mono@latest/latin-400-normal.ttf',
+        'Bold':    'https://cdn.jsdelivr.net/fontsource/fonts/jetbrains-mono@latest/latin-700-normal.ttf',
+    },
+}
+
+async def _load_web_fonts():
+    for fam, variants in _FONT_SRC.items():
+        ok = True
+        for style, url in variants.items():
+            try:
+                resp = await pyfetch(url)
+                if resp.status != 200:
+                    ok = False; continue
+                data = await resp.bytes()
+                path = '/tmp/_font_%s_%s.ttf' % (fam.replace(' ', ''), style)
+                with open(path, 'wb') as f: f.write(data)
+                fm.fontManager.addfont(path)
+                _FONT_FILES.setdefault(fam, {})[style] = path
+            except Exception:
+                ok = False
+        if ok: FONTS_OK.add(fam)
+    if 'Inter' in FONTS_OK: apply_theme('StatsPro')  # refresca la fuente por defecto ya cargada
+
+await _load_web_fonts()
+
+def font_options():
+    import json as _j
+    opts = [
+        dict(id='Inter', label='Inter (moderna)', ok=('Inter' in FONTS_OK)),
+        dict(id='DejaVu Sans', label='DejaVu Sans (del sistema)', ok=True),
+        dict(id='Lora', label='Lora (serif editorial)', ok=('Lora' in FONTS_OK)),
+        dict(id='DejaVu Serif', label='DejaVu Serif (del sistema)', ok=True),
+        dict(id='JetBrains Mono', label='JetBrains Mono (técnica)', ok=('JetBrains Mono' in FONTS_OK)),
+        dict(id='Monoespaciada', label='Monoespaciada (del sistema)', ok=True),
+        dict(id='STIX', label='STIX (notación matemática)', ok=True),
+    ]
+    return _j.dumps([o for o in opts if o['ok']])
 `;
 
 window.getPyodide = getPyodide;

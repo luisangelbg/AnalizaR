@@ -173,11 +173,7 @@ def _err(vals, kind):
     return m, (sd/np.sqrt(n) if n > 0 else 0)   # se
 
 def _render(opts):
-    apply_theme(opts.get('theme','StatsPro'))
-    fs = float(opts.get('font_scale', 1.0))
-    if fs != 1.0:
-        for k in ['font.size','axes.titlesize','axes.labelsize','legend.fontsize','xtick.labelsize','ytick.labelsize']:
-            plt.rcParams[k] = plt.rcParams[k]*fs
+    apply_theme(opts.get('theme','StatsPro'), opts.get('font'), float(opts.get('font_scale', 1.0)), opts.get('grid'))
     df = DF().copy()
     kind = opts.get('kind','histogram')
     x = opts.get('x'); y = opts.get('y'); g = opts.get('group') or None
@@ -456,15 +452,17 @@ def _draw_single(ax, df, opts, kind, x, y, g, colors, alpha, flip, single=False)
         ax.set_yticks([]); ax.spines['left'].set_visible(False)
 
 # ---------- API JS ----------
-def make_plot(opts_json):
+def make_plot(opts_json, fmt='png'):
     opts = json.loads(opts_json)
     _LAST['opts'] = opts
     fig = _render(opts)
-    return fig_to_uri(fig, 'png', int(opts.get('dpi', 140)))
+    finish_common(fig, opts)
+    return fig_to_uri(fig, fmt, int(opts.get('dpi', 140)))
 
 def export_plot(fmt, dpi=300):
     if 'opts' not in _LAST: return ''
     fig = _render(_LAST['opts'])
+    finish_common(fig, _LAST['opts'])
     return fig_to_uri(fig, fmt, int(dpi))
 
 def plot_data_csv():

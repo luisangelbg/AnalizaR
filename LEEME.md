@@ -32,8 +32,15 @@ Mira `datos/iris.csv` como plantilla: 4 columnas numéricas + 1 categórica (`Sp
 ## Estado
 
 - **Inicio — LISTO:** portada con arte SVG propio (comparación de medias, regresión/correlación y
-  mapa multivariado con elipses), recorrido de los 6 bloques, tarjetas clicables y botones para
-  empezar con tus datos o ver el ejemplo de iris.
+  mapa multivariado con elipses), un ícono ilustrativo por bloque, recorrido de los 6 bloques,
+  tarjetas clicables y botones para empezar con tus datos o ver el ejemplo de iris.
+- **Motor de figuras — LISTO:** todas las figuras de la app (bloques 2 a 6) comparten un mismo
+  sistema de edición: **tipografía real** (Inter, Lora o JetBrains Mono, descargadas una vez y
+  registradas de verdad en el motor gráfico — no solo la fuente del sistema), tamaño de fuente,
+  paleta/color, tema, cuadrícula, leyenda (mostrar/ocultar y posición), título y tamaño de la
+  figura. Los SVG exportados llevan la tipografía **incrustada** (autocontenidos, se ven igual en
+  cualquier computadora) y los PDF incrustan la fuente TrueType — calidad de publicación real,
+  no solo una imagen más grande.
 - **Bloque 1 — Datos — LISTO:** carga de `.xlsx`/`.csv`, detección automática de tipo de
   variable (numérica / categórica / excluir), resumen del conjunto (observaciones,
   faltantes, duplicados) y vista previa.
@@ -140,7 +147,8 @@ datos/iris.csv        datos de ejemplo (plantilla de formato)
 js/core.js            estado + utilidades (tablas, CSV, descargas)
 js/ui.js              navegación y spinner
 js/home.js            bloque de Inicio (portada, arte SVG, recorrido y tarjetas)
-js/pyodide-core.js    carga de Python + temas y paletas de figuras
+js/pyodide-core.js    carga de Python + tipografías web + temas y paletas de figuras
+js/figstyle.js        barra compartida de edición de figuras (fuente, tamaño, cuadrícula, leyenda)
 js/descriptive.py.js  código Python del Bloque 2
 js/data.js            Bloque 1 (carga y tipado de datos)
 js/descriptive.js     Bloque 2 (tablas + estudio de gráficas)

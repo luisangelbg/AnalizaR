@@ -1,7 +1,7 @@
 /* Bloque 3 — Supuestos del ANOVA (controlador JS). */
 
 let assumpReady = false;
-const A3 = { fitted: false, theme: 'StatsPro' };
+const A3 = { fitted: false, theme: 'StatsPro', styleBar: null };
 
 const FIG_INFO = {
   panel4: ['Diagnóstico general (4 paneles)', 'El cuadro clásico de diagnóstico: residuales vs. ajustados, Q–Q, escala–ubicación e influencia. Ideal para incluir tal cual en una tesis.'],
@@ -27,8 +27,6 @@ function build3() {
   el('a3Factors').innerHTML = cats.length
     ? cats.map(c => `<label class="checkbox-label"><input type="checkbox" value="${c}"> ${c}</label>`).join('')
     : '<p class="hint">No hay variables categóricas. El análisis de supuestos del ANOVA necesita al menos un factor (grupo/tratamiento).</p>';
-  el('a3Theme').innerHTML = ['StatsPro', 'Minimal', 'Publicacion', 'Cuadricula', 'Clasico', 'Oscuro']
-    .map(t => `<option>${t}</option>`).join('');
 }
 
 el('a3Factors').addEventListener('change', () => {
@@ -52,7 +50,6 @@ async function runAssumptions() {
   if (!resp) { showMessage('a3Messages', 'error', 'Elige la variable respuesta.'); return; }
   if (!factors.length) { showMessage('a3Messages', 'error', 'Elige al menos un factor.'); return; }
   const inter = el('a3Inter').checked && factors.length >= 2;
-  A3.theme = el('a3Theme').value;
   clearMessages('a3Messages');
   showSpinner('Ajustando el modelo…');
   try {
@@ -76,9 +73,11 @@ async function runAssumptions() {
     renderInfluence(infl);
     renderRecommendation(norm, homo, indep, rec);
 
+    if (!A3.styleBar) A3.styleBar = await mountFigStyleBar(el('a3StyleBar'), 'a3', { showSize: false });
+    A3.styleBar.onChange(regenAssumpFigs);
+
     setSpinner('Generando figuras…');
-    const figs = await runPyJSON(`all_figs(${JSON.stringify(A3.theme)})`);
-    renderFigGallery(figs);
+    await regenAssumpFigs();
 
     A3.fitted = true;
     el('a3Results').style.display = 'block';
@@ -86,6 +85,16 @@ async function runAssumptions() {
   } catch (err) {
     console.error(err);
     showMessage('a3Messages', 'error', 'Error: ' + (err.message || err).toString().split('\n').slice(-4).join('<br>'));
+  } finally { hideSpinner(); }
+}
+
+async function regenAssumpFigs() {
+  const s = A3.styleBar.get();
+  A3.theme = s.theme; A3.style = s;
+  showSpinner('Regenerando figuras…');
+  try {
+    const figs = await runPyJSON(`all_figs(${JSON.stringify(s.theme)}, ${JSON.stringify(JSON.stringify(s))})`);
+    renderFigGallery(figs);
   } finally { hideSpinner(); }
 }
 
@@ -193,17 +202,10 @@ function renderFigGallery(figs) {
 async function exportAssumpFig(name, fmt) {
   showSpinner('Exportando ' + fmt.toUpperCase() + '…');
   try {
-    const dpi = +el('a3Dpi').value || 300;
-    const uri = await runPy(`assump_fig(${JSON.stringify(name)}, ${JSON.stringify(fmt)}, ${dpi}, ${JSON.stringify(A3.theme)})`);
+    const s = A3.style || {};
+    const dpi = s.dpi || 300;
+    const uri = await runPy(`assump_fig(${JSON.stringify(name)}, ${JSON.stringify(fmt)}, ${dpi}, ${JSON.stringify(A3.theme)}, 7.4, 5.0, ${JSON.stringify(JSON.stringify(s))})`);
     if (uri) download(dataURItoBlob(uri), `${slug(state.fileName)}_supuestos_${name}.${fmt}`);
   } catch (err) { showMessage('a3Messages', 'error', 'Error al exportar: ' + err.message); }
   finally { hideSpinner(); }
 }
-
-el('a3Theme').addEventListener('change', async () => {
-  if (!A3.fitted) return;
-  A3.theme = el('a3Theme').value;
-  showSpinner('Regenerando figuras…');
-  try { renderFigGallery(await runPyJSON(`all_figs(${JSON.stringify(A3.theme)})`)); }
-  finally { hideSpinner(); }
-});

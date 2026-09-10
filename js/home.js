@@ -111,6 +111,37 @@ function heroArt() {
     '</svg>';
 }
 
+/* ---------- iconos por bloque (mini arte SVG, uno por tarjeta) ---------- */
+function blockIcon(n) {
+  const s = 'stroke="' + AZUL + '" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" fill="none"';
+  const icons = {
+    1: '<rect x="7" y="8" width="26" height="24" rx="3" ' + s + '/><line x1="7" y1="16" x2="33" y2="16" ' + s + '/>' +
+       '<line x1="16" y1="16" x2="16" y2="32" ' + s + '/><line x1="24.5" y1="16" x2="24.5" y2="32" ' + s + '/>' +
+       '<path d="M20 2v9m0-9-4 4m4-4 4 4" stroke="' + NARANJA + '" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" fill="none"/>',
+    2: '<line x1="6" y1="33" x2="34" y2="33" ' + s + '/>' +
+       '<rect x="9" y="21" width="6" height="12" rx="1.4" fill="' + AZUL + '" fill-opacity=".8"/>' +
+       '<rect x="17" y="12" width="6" height="21" rx="1.4" fill="' + NARANJA + '" fill-opacity=".85"/>' +
+       '<rect x="25" y="17" width="6" height="16" rx="1.4" fill="' + TEAL + '" fill-opacity=".8"/>' +
+       '<path d="M8 20 Q16 6 20 10 T32 14" stroke="#333" stroke-width="1.6" fill="none" opacity=".55"/>',
+    3: '<rect x="6" y="6" width="28" height="28" rx="4" ' + s + ' opacity=".55"/>' +
+       '<line x1="9" y1="31" x2="31" y2="9" stroke="' + NARANJA + '" stroke-width="2" stroke-dasharray="1 4" stroke-linecap="round"/>' +
+       [[12,27],[16,23],[19,20],[22,15],[26,12],[29,10]].map(([x,y])=>'<circle cx="'+x+'" cy="'+y+'" r="2.3" fill="'+AZUL+'"/>').join(''),
+    4: '<line x1="6" y1="33" x2="34" y2="33" ' + s + '/><line x1="6" y1="33" x2="6" y2="7" ' + s + '/>' +
+       [[9,27],[13,25],[15,21],[19,22],[22,16],[25,17],[28,11],[31,13]].map(([x,y])=>'<circle cx="'+x+'" cy="'+y+'" r="2.1" fill="'+TEAL+'" fill-opacity=".85"/>').join('') +
+       '<line x1="8" y1="29" x2="32" y2="10" stroke="' + NARANJA + '" stroke-width="2.2" stroke-linecap="round"/>',
+    5: [0,1,2].map(i => [0,1,2].map(j => {
+         const r = [[8,3.5,4.5],[5,8,3],[4.5,3,8]][i][j];
+         const col = i===j ? AZUL : (i+j)%2 ? NARANJA : TEAL;
+         return '<circle cx="'+(9+j*11)+'" cy="'+(9+i*11)+'" r="'+r+'" fill="'+col+'" fill-opacity="'+(i===j?0.9:0.55)+'"/>';
+       }).join('')).join(''),
+    6: '<ellipse cx="15" cy="22" rx="11" ry="8" fill="' + AZUL + '" fill-opacity=".14" stroke="' + AZUL + '" stroke-width="1.4" transform="rotate(-18 15 22)"/>' +
+       '<ellipse cx="26" cy="15" rx="9" ry="6.5" fill="' + NARANJA + '" fill-opacity=".16" stroke="' + NARANJA + '" stroke-width="1.4" transform="rotate(12 26 15)"/>' +
+       [[10,25],[13,21],[17,24],[8,20]].map(([x,y])=>'<circle cx="'+x+'" cy="'+y+'" r="2" fill="'+AZUL+'"/>').join('') +
+       [[23,17],[27,13],[30,17],[24,11]].map(([x,y])=>'<circle cx="'+x+'" cy="'+y+'" r="2" fill="'+NARANJA+'"/>').join(''),
+  };
+  return '<svg viewBox="0 0 40 40" width="40" height="40" aria-hidden="true">' + (icons[n] || '') + '</svg>';
+}
+
 /* ---------- recorrido y tarjetas ---------- */
 const PASOS = [
   ['Datos', 'sube xlsx/csv, detección automática de tipo de variable'],
@@ -147,8 +178,8 @@ function pintar() {
   const fg = el('featureGrid');
   if (fg) fg.innerHTML = BLOQUES.map((b, i) =>
     '<button class="feat" data-ir="' + (i + 1) + '" type="button">' +
-    '<span class="feat-n">' + (i + 1) + '</span>' +
-    '<span><span class="feat-t">' + b[0] + '</span>' +
+    '<span class="feat-art">' + blockIcon(i + 1) + '</span>' +
+    '<span><span class="feat-t"><span class="feat-n">' + (i + 1) + '</span> ' + b[0] + '</span>' +
     '<span class="feat-d">' + b[1] + '</span></span></button>').join('');
 
   els('[data-ir]').forEach(e => e.addEventListener('click', () => {

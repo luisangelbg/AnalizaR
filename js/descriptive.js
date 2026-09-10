@@ -91,6 +91,7 @@ function buildPlotOptions() {
       <label>Paleta (con grupos) <select id="pPalette">${PALETTES.map(p => opt(p)).join('')}</select></label>
       <label>Color (sin grupos) <input type="color" id="pColor" value="#4C72B0"></label>
       <label>Tema <select id="pTheme">${THEMES.map(t => opt(t)).join('')}</select></label>
+      <label>Fuente <select id="pFontFamily"></select></label>
       <label>Transparencia <input type="range" id="pAlpha" min="0.1" max="1" step="0.05" value="0.85"><span id="pAlphaV" class="rv">0.85</span></label>
       <label>Escala de fuente <input type="range" id="pFont" min="0.7" max="1.6" step="0.05" value="1"><span id="pFontV" class="rv">1.0</span></label>
       <label class="ck"><input type="checkbox" id="pGrid" checked> Cuadrícula</label>
@@ -145,6 +146,9 @@ function buildPlotOptions() {
 
   // set DPI default 300
   el('pDpi').value = '300';
+  getFontList().then(fonts => {
+    el('pFontFamily').innerHTML = fonts.map(f => `<option value="${f.id}" ${f.id === 'Inter' ? 'selected' : ''}>${f.label}</option>`).join('');
+  });
 
   // listeners: cualquier cambio => re-render
   els('input,select', box).forEach(inp => {
@@ -220,6 +224,7 @@ function collectOpts() {
     kind,
     x: el('pX').value, y: el('pY').value, group: el('pGroup').value || '',
     palette: el('pPalette').value, single_color: el('pColor').value, theme: el('pTheme').value,
+    font: el('pFontFamily').value,
     alpha: +el('pAlpha').value, font_scale: +el('pFont').value, grid: el('pGrid').checked,
     bins: +el('pBins').value, bw_adjust: +el('pBw').value, smooth: el('pSmooth').value,
     errorbar: el('pErr').value, jitter: +el('pJitter').value, cmap: el('pCmap').value,
@@ -230,7 +235,7 @@ function collectOpts() {
     ylab: el('pYlab').value, caption: el('pCap').value,
     legend_show: el('pLegend').checked, legend_pos: el('pLegPos').value,
     log_x: el('pLogX').checked, log_y: el('pLogY').checked,
-    width: +el('pW').value, height: +el('pH').value, dpi: 140,
+    width: +el('pW').value, height: +el('pH').value, dpi: 170,
   };
   // color unico: si no hay grupo, mandamos la paleta como un solo color
   if (!o.group) o.palette = null, o.single_color = el('pColor').value;

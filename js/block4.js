@@ -1,7 +1,7 @@
 /* Bloque 4a — Regresión (controlador JS). */
 
 let regReady = false;
-const R4 = { fitted: false, theme: 'StatsPro' };
+const R4 = { fitted: false, theme: 'StatsPro', styleBar: null };
 
 document.addEventListener('analizar:data', build4);
 initTabs('panel-4');
@@ -14,7 +14,6 @@ function build4() {
   el('r4CatX').innerHTML = cats.length
     ? cats.map(c => `<label class="checkbox-label"><input type="checkbox" value="${c}"> ${c}</label>`).join('')
     : '<p class="hint">Sin variables categóricas.</p>';
-  el('r4Theme').innerHTML = ['StatsPro', 'Minimal', 'Publicacion', 'Cuadricula', 'Clasico', 'Oscuro'].map(t => `<option>${t}</option>`).join('');
   // no permitir respuesta como predictor
   el('r4Resp').addEventListener('change', () => {
     els('#r4NumX input').forEach(i => { i.disabled = i.value === el('r4Resp').value; if (i.disabled) i.checked = false; });
@@ -34,7 +33,6 @@ async function runRegression() {
   const catX = els('#r4CatX input:checked').map(c => c.value);
   if (!resp) { showMessage('r4Messages', 'error', 'Elige la variable respuesta.'); return; }
   if (!numX.length && !catX.length) { showMessage('r4Messages', 'error', 'Elige al menos un predictor.'); return; }
-  R4.theme = el('r4Theme').value;
   clearMessages('r4Messages');
   showSpinner('Preparando datos…');
   try {
@@ -53,6 +51,10 @@ async function runRegression() {
     // detalle: llenar dropdown y mostrar el mejor
     const dv = el('r4DetailSel');
     dv.innerHTML = fit.models.map(m => `<option ${m.nombre === rec.best ? 'selected' : ''}>${m.nombre}</option>`).join('');
+    if (!R4.styleBar) {
+      R4.styleBar = await mountFigStyleBar(el('r4StyleBar'), 'r4', { showSize: true, w: 7.4, h: 4.8 });
+      R4.styleBar.onChange(() => { ['compare', 'fit', 'resid', 'qq'].forEach(k => renderRegFig(k, el('r4DetailSel').value)); });
+    }
     await renderDetail(rec.best);
     await renderRegFig('compare', rec.best);
 
@@ -142,11 +144,15 @@ async function renderDetail(name) {
 }
 
 const FIGS4 = { compare: 'r4FigCompare', fit: 'r4FigFit', resid: 'r4FigResid', qq: 'r4FigQQ' };
+function regStyleArgs(s) {
+  return `${s.width}, ${s.height}, ${JSON.stringify(JSON.stringify(s))}`;
+}
 async function renderRegFig(kind, name) {
   const box = el(FIGS4[kind]); if (!box) return;
   box.classList.add('loading');
   try {
-    const uri = await runPy(`reg_fig(${JSON.stringify(name)}, ${JSON.stringify(kind)}, "png", 140, ${JSON.stringify(R4.theme)})`);
+    const s = R4.styleBar.get(); R4.theme = s.theme;
+    const uri = await runPy(`reg_fig(${JSON.stringify(name)}, ${JSON.stringify(kind)}, "png", 170, ${JSON.stringify(s.theme)}, ${regStyleArgs(s)})`);
     box.innerHTML = `<img src="${uri}">
       <div class="fig-dl">
         ${['png', 'svg', 'pdf'].map(f => `<button class="btn btn-secondary btn-xs" data-k="${kind}" data-n="${name}" data-f="${f}">${f.toUpperCase()}</button>`).join('')}
@@ -159,15 +165,8 @@ async function renderRegFig(kind, name) {
 async function exportReg(kind, name, fmt) {
   showSpinner('Exportando…');
   try {
-    const dpi = +el('r4Dpi').value || 300;
-    const uri = await runPy(`reg_fig(${JSON.stringify(name)}, ${JSON.stringify(kind)}, ${JSON.stringify(fmt)}, ${dpi}, ${JSON.stringify(R4.theme)})`);
+    const s = R4.styleBar.get();
+    const uri = await runPy(`reg_fig(${JSON.stringify(name)}, ${JSON.stringify(kind)}, ${JSON.stringify(fmt)}, ${s.dpi}, ${JSON.stringify(s.theme)}, ${regStyleArgs(s)})`);
     if (uri) download(dataURItoBlob(uri), `${slug(state.fileName)}_reg_${kind}_${slug(name)}.${fmt}`);
   } finally { hideSpinner(); }
 }
-
-el('r4Theme').addEventListener('change', () => {
-  if (!R4.fitted) return;
-  R4.theme = el('r4Theme').value;
-  const name = el('r4DetailSel').value;
-  ['compare', 'fit', 'resid', 'qq'].forEach(k => renderRegFig(k, name));
-});

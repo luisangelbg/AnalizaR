@@ -308,7 +308,7 @@ def _rd(x, y):  # datos limpios de un par
     m = np.isfinite(xv) & np.isfinite(yv); return xv[m], yv[m]
 
 def corr_fig(kind, fmt='png', dpi=140, theme='StatsPro', opts_json='{}'):
-    o = json.loads(opts_json); apply_theme(theme)
+    o = json.loads(opts_json); apply_theme(theme, o.get('font'), float(o.get('font_scale', 1.0)), o.get('grid'))
 
     if kind in ('heatmap', 'corrplot'):
         R = np.array(K['R'], float); cols = K['cols']; P = np.array(K['P'], float)
@@ -348,7 +348,7 @@ def corr_fig(kind, fmt='png', dpi=140, theme='StatsPro', opts_json='{}'):
         ax.set_xticklabels(labs, rotation=45, ha='right', fontsize=8); ax.set_yticklabels(labs, fontsize=8)
         ax.set_title(o.get('title') or ('Matriz de correlación de %s' % K['method'].capitalize()))
         ax.grid(False); fig.tight_layout()
-        return fig_to_uri(fig, fmt, int(dpi))
+        finish_common(fig, o); return fig_to_uri(fig, fmt, int(dpi))
 
     if kind == 'network':
         R = np.array(K['R'], float); cols = K['cols']; kk = len(cols)
@@ -368,7 +368,7 @@ def corr_fig(kind, fmt='png', dpi=140, theme='StatsPro', opts_json='{}'):
             ax.text(pos[i, 0], pos[i, 1], c, ha='center', va='center', fontsize=8, zorder=4)
         ax.set_title(o.get('title') or ('Red de correlaciones (|r| ≥ %.2f)' % thr))
         ax.set_aspect('equal'); ax.axis('off'); fig.tight_layout()
-        return fig_to_uri(fig, fmt, int(dpi))
+        finish_common(fig, o); return fig_to_uri(fig, fmt, int(dpi))
 
     if kind == 'pairs':
         vs = o.get('vars') or K['nums'][:5]
@@ -402,7 +402,7 @@ def corr_fig(kind, fmt='png', dpi=140, theme='StatsPro', opts_json='{}'):
         if g and len(gl) > 1:
             fig.legend(handles=[mpatches.Patch(color=cmap[i], label=gl[i]) for i in range(len(gl))], loc='upper right')
         fig.suptitle(o.get('title') or 'Matriz de dispersión y correlación', fontweight='bold')
-        fig.tight_layout(); return fig_to_uri(fig, fmt, int(dpi))
+        fig.tight_layout(); finish_common(fig, o); return fig_to_uri(fig, fmt, int(dpi))
 
     if kind == 'pair':
         x, y = _rd(o['x'], o['y'])
@@ -424,7 +424,7 @@ def corr_fig(kind, fmt='png', dpi=140, theme='StatsPro', opts_json='{}'):
         axm.set_xlabel(o['x']); axm.set_ylabel(o['y'])
         axm.set_title('%s vs %s   ·   r = %.3f (p %s)   ·   ρ = %.3f' % (o['x'], o['y'], rr.statistic,
                       ('< 0.001' if rr.pvalue < .001 else '= %.3f' % rr.pvalue), rho), fontsize=10)
-        fig.tight_layout(); return fig_to_uri(fig, fmt, int(dpi))
+        fig.tight_layout(); finish_common(fig, o); return fig_to_uri(fig, fmt, int(dpi))
 
     if kind == 'cca_scatter':
         cca = K['cca']; dim = int(o.get('dim', 1)) - 1
@@ -443,7 +443,7 @@ def corr_fig(kind, fmt='png', dpi=140, theme='StatsPro', opts_json='{}'):
         b = np.polyfit(Xc, Yc, 1); ax.plot(np.sort(Xc), np.polyval(b, np.sort(Xc)), color='#C44E52', lw=2)
         ax.set_xlabel('Variate canónica X — dim %d' % (dim + 1)); ax.set_ylabel('Variate canónica Y — dim %d' % (dim + 1))
         ax.set_title('Correlación canónica dim %d:  r = %.3f' % (dim + 1, cca['r'][dim]))
-        fig.tight_layout(); return fig_to_uri(fig, fmt, int(dpi))
+        fig.tight_layout(); finish_common(fig, o); return fig_to_uri(fig, fmt, int(dpi))
 
     if kind == 'partial_heat':
         pc = K['PC']; cols = K['PCcols']; Pp = K.get('PCp'); kk = len(cols)
@@ -460,7 +460,7 @@ def corr_fig(kind, fmt='png', dpi=140, theme='StatsPro', opts_json='{}'):
         ax.set_xticks(range(kk)); ax.set_yticks(range(kk))
         ax.set_xticklabels(cols, rotation=45, ha='right', fontsize=8); ax.set_yticklabels(cols, fontsize=8)
         ax.set_title(o.get('title') or 'Correlación parcial'); ax.grid(False)
-        fig.tight_layout(); return fig_to_uri(fig, fmt, int(dpi))
+        fig.tight_layout(); finish_common(fig, o); return fig_to_uri(fig, fmt, int(dpi))
 
     if kind == 'cca_loadings':
         cca = K['cca']; dim = int(o.get('dim', 1)) - 1
@@ -474,5 +474,5 @@ def corr_fig(kind, fmt='png', dpi=140, theme='StatsPro', opts_json='{}'):
         ax.axvline(0, color='#333', lw=.8)
         ax.set_xlabel('Carga canónica (correlación con la variate) — dim %d' % (dim + 1))
         ax.set_title('Cargas canónicas — azul: grupo X, naranja: grupo Y')
-        fig.tight_layout(); return fig_to_uri(fig, fmt, int(dpi))
+        fig.tight_layout(); finish_common(fig, o); return fig_to_uri(fig, fmt, int(dpi))
 `;

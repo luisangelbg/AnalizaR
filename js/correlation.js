@@ -1,7 +1,7 @@
 /* Bloque 5 — Correlación (controlador JS). */
 
 let corrReady = false;
-const C5 = { prepared: false, theme: 'StatsPro' };
+const C5 = { prepared: false, theme: 'StatsPro', styleBar: null };
 
 document.addEventListener('analizar:data', build5);
 initTabs('panel-5');
@@ -10,7 +10,15 @@ function build5() {
   const nums = (state.info && state.info.numeric) || [];
   const cats = (state.info && state.info.categorical) || [];
   el('c5Vars').innerHTML = nums.map(v => `<label class="checkbox-label"><input type="checkbox" value="${v}" checked> ${v}</label>`).join('');
-  el('c5Theme').innerHTML = ['StatsPro', 'Minimal', 'Publicacion', 'Cuadricula', 'Clasico', 'Oscuro'].map(t => `<option>${t}</option>`).join('');
+  mountFigStyleBar(el('c5StyleBar'), 'c5', { showSize: false }).then(bar => {
+    C5.styleBar = bar;
+    bar.onChange(() => {
+      if (C5.matrixDone) ['heatmap', 'corrplot', 'network', 'pairs'].forEach(renderCorrFig);
+      if (C5.pairDone) renderCorrFig('pair');
+      if (C5.partialR) renderPartialHeat();
+      if (C5.ccaDone) { renderCorrFig('cca_scatter'); renderCorrFig('cca_loadings'); }
+    });
+  });
   // par
   el('c5PairX').innerHTML = nums.map(v => `<option>${v}</option>`).join('');
   el('c5PairY').innerHTML = nums.map((v, i) => `<option ${i === 1 ? 'selected' : ''}>${v}</option>`).join('');
@@ -41,7 +49,6 @@ el('c5RunMatrix').addEventListener('click', runMatrix);
 async function runMatrix() {
   const method = el('c5Method').value;
   const padj = el('c5Padj').value;
-  C5.theme = el('c5Theme').value;
   showSpinner('Calculando matriz de correlación…');
   try {
     await ensureCorr();
@@ -74,7 +81,9 @@ el('dlCorrCsv').addEventListener('click', () => {
 const CFIG = { heatmap: 'c5FigHeat', corrplot: 'c5FigCorrplot', network: 'c5FigNet', pairs: 'c5FigPairs',
   pair: 'c5FigPair', cca_scatter: 'c5FigCca', cca_loadings: 'c5FigCcaLoad' };
 function corrFigOpts(kind) {
-  const o = { title: '', cluster: el('c5Cluster').checked, mask: el('c5Mask').value };
+  const s = C5.styleBar.get(); C5.theme = s.theme;
+  const o = { title: '', cluster: el('c5Cluster').checked, mask: el('c5Mask').value,
+    font: s.font, font_scale: s.font_scale, grid: s.grid, legend_show: s.legend_show, legend_pos: s.legend_pos };
   if (kind === 'network') o.thr = +el('c5NetThr').value || 0.3;
   if (kind === 'pairs') { o.vars = els('#c5Vars input:checked').map(c => c.value).slice(0, 6); o.group = el('c5PairsGroup').value || null; o.palette = 'StatsPro'; }
   if (kind === 'pair') { o.x = el('c5PairX').value; o.y = el('c5PairY').value; }
@@ -85,7 +94,7 @@ async function renderCorrFig(kind) {
   const box = el(CFIG[kind]); if (!box) return;
   box.classList.add('loading');
   try {
-    const uri = await runPy(`corr_fig(${JSON.stringify(kind)}, "png", 140, ${JSON.stringify(C5.theme)}, ${JSON.stringify(JSON.stringify(corrFigOpts(kind)))})`);
+    const uri = await runPy(`corr_fig(${JSON.stringify(kind)}, "png", 170, ${JSON.stringify(C5.theme)}, ${JSON.stringify(JSON.stringify(corrFigOpts(kind)))})`);
     box.innerHTML = `<img src="${uri}"><div class="fig-dl">${['png', 'svg', 'pdf'].map(f => `<button class="btn btn-secondary btn-xs" data-k="${kind}" data-f="${f}">${f.toUpperCase()}</button>`).join('')}</div>`;
     els('button', box).forEach(b => b.addEventListener('click', () => exportCorrFig(b.dataset.k, b.dataset.f)));
   } catch (err) { box.innerHTML = `<p class="msg msg-error">${(err.message || '').split('\n').slice(-2).join(' ')}</p>`; }
@@ -94,8 +103,8 @@ async function renderCorrFig(kind) {
 async function exportCorrFig(kind, fmt) {
   showSpinner('Exportando…');
   try {
-    const dpi = +el('c5Dpi').value || 300;
-    const uri = await runPy(`corr_fig(${JSON.stringify(kind)}, ${JSON.stringify(fmt)}, ${dpi}, ${JSON.stringify(C5.theme)}, ${JSON.stringify(JSON.stringify(corrFigOpts(kind)))})`);
+    const s = C5.styleBar.get();
+    const uri = await runPy(`corr_fig(${JSON.stringify(kind)}, ${JSON.stringify(fmt)}, ${s.dpi}, ${JSON.stringify(C5.theme)}, ${JSON.stringify(JSON.stringify(corrFigOpts(kind)))})`);
     if (uri) download(dataURItoBlob(uri), `${slug(state.fileName)}_corr_${kind}.${fmt}`);
   } finally { hideSpinner(); }
 }
@@ -103,7 +112,6 @@ async function exportCorrFig(kind, fmt) {
   if (!C5.matrixDone) return;
   clearTimeout(C5._t); C5._t = setTimeout(() => ['heatmap', 'corrplot', 'network', 'pairs'].forEach(renderCorrFig), 250);
 }));
-el('c5Theme').addEventListener('change', () => { C5.theme = el('c5Theme').value; if (C5.matrixDone) ['heatmap', 'corrplot', 'network', 'pairs'].forEach(renderCorrFig); });
 
 /* ---------- PAR ---------- */
 el('c5RunPair').addEventListener('click', runPair);
@@ -151,12 +159,15 @@ el('c5RunPartial').addEventListener('click', async () => {
 async function renderPartialHeat() {
   const box = el('c5FigPartHeat'); box.classList.add('loading');
   try {
-    const uri = await runPy(`corr_fig("partial_heat", "png", 140, ${JSON.stringify(C5.theme)}, "{}")`);
+    const s = C5.styleBar.get(); C5.theme = s.theme;
+    const oJson = JSON.stringify(JSON.stringify({ font: s.font, font_scale: s.font_scale, grid: s.grid, legend_show: s.legend_show, legend_pos: s.legend_pos }));
+    const uri = await runPy(`corr_fig("partial_heat", "png", 170, ${JSON.stringify(s.theme)}, ${oJson})`);
     box.innerHTML = `<img src="${uri}"><div class="fig-dl">${['png', 'svg', 'pdf'].map(f => `<button class="btn btn-secondary btn-xs" data-f="${f}">${f.toUpperCase()}</button>`).join('')}</div>`;
     els('button', box).forEach(b => b.addEventListener('click', async () => {
       showSpinner('Exportando…');
       try {
-        const uri2 = await runPy(`corr_fig("partial_heat", ${JSON.stringify(b.dataset.f)}, ${+el('c5Dpi').value || 300}, ${JSON.stringify(C5.theme)}, "{}")`);
+        const s2 = C5.styleBar.get();
+        const uri2 = await runPy(`corr_fig("partial_heat", ${JSON.stringify(b.dataset.f)}, ${s2.dpi}, ${JSON.stringify(s2.theme)}, ${oJson})`);
         if (uri2) download(dataURItoBlob(uri2), `${slug(state.fileName)}_corr_parcial.${b.dataset.f}`);
       } finally { hideSpinner(); }
     }));

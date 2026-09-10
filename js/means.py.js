@@ -368,8 +368,10 @@ def _method_note(m):
 def _colors(n): return palette_colors(M.get('palette', 'StatsPro'), n)
 
 def means_fig(kind, fmt='png', dpi=140, theme='StatsPro', palette='StatsPro', width=7.6, height=5.0,
-              errbar='ci95', style='point', title='', ylab=''):
-    apply_theme(theme); M['palette'] = palette
+              errbar='ci95', style='point', title='', ylab='', font=None, font_scale=1.0, grid=None,
+              legend_show=None, legend_pos=None):
+    apply_theme(theme, font, float(font_scale or 1.0), grid); M['palette'] = palette
+    ed = dict(legend_show=legend_show, legend_pos=legend_pos, grid=grid)
     ph = M.get('last_ph'); d = M['d']; resp = M['resp']
     fig, ax = plt.subplots(figsize=(float(width), float(height)))
 
@@ -384,7 +386,7 @@ def means_fig(kind, fmt='png', dpi=140, theme='StatsPro', palette='StatsPro', wi
             ax.set_xticks(range(len(g))); ax.set_xticklabels(g.index)
         ax.set_xlabel(M['factors'][0]); ax.set_ylabel(ylab or ('Media de ' + resp))
         ax.set_title(title or 'Gráfico de interacción'); ax.legend(fontsize=8)
-        fig.tight_layout(); return fig_to_uri(fig, fmt, int(dpi))
+        fig.tight_layout(); finish_common(fig, ed); return fig_to_uri(fig, fmt, int(dpi))
 
     if ph is None:
         ax.text(0.5, 0.5, 'Ejecuta primero una prueba post-hoc', ha='center'); fig.tight_layout()
@@ -461,6 +463,7 @@ def means_fig(kind, fmt='png', dpi=140, theme='StatsPro', palette='StatsPro', wi
         ax.margins(y=0.15)
 
     fig.tight_layout()
+    finish_common(fig, ed)
     return fig_to_uri(fig, fmt, int(dpi))
 
 def cld_csv():

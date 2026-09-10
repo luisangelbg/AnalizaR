@@ -14,8 +14,21 @@ function build6() {
   el('m6Cats').innerHTML = cats.length ? cats.map(v => chk(v, false)).join('') : '<p class="hint">Sin variables categóricas.</p>';
   el('m6Theme').innerHTML = ['StatsPro', 'Minimal', 'Publicacion', 'Cuadricula', 'Clasico', 'Oscuro'].map(t => `<option>${t}</option>`).join('');
   el('m6Palette').innerHTML = ['StatsPro', 'Okabe-Ito', 'Vivo', 'Tierra', 'Pastel', 'Set2', 'Dark2', 'Viridis'].map(t => `<option>${t}</option>`).join('');
+  el('m6Legend').innerHTML = LEGEND_OPTS.map(([v, l]) => `<option value="${v}">${l}</option>`).join('');
+  getFontList().then(fonts => {
+    el('m6Font').innerHTML = fonts.map(f => `<option value="${f.id}" ${f.id === 'Inter' ? 'selected' : ''}>${f.label}</option>`).join('');
+  });
   el('m6Group').innerHTML = `<option value="">— ninguno —</option>` + cats.map(c => `<option>${c}</option>`).join('');
   el('cl6Group').innerHTML = `<option value="">— ninguno —</option>` + cats.map(c => `<option>${c}</option>`).join('');
+}
+el('m6FontScale').addEventListener('input', () => { el('m6FontScaleV').textContent = (+el('m6FontScale').value).toFixed(2); });
+function m6StyleExtra() {
+  const legendV = el('m6Legend').value;
+  return {
+    font: el('m6Font').value, font_scale: +el('m6FontScale').value || 1, grid: el('m6Grid').checked,
+    legend_show: legendV === 'oculta' ? false : true,
+    legend_pos: (legendV === 'auto' || legendV === 'oculta') ? null : legendV,
+  };
 }
 
 function selNums() { return els('#m6Nums input:checked').map(c => c.value); }
@@ -138,7 +151,7 @@ function pairAxes(n) {
 
 const FFIG = { scree: 'm6FigScree', var_circle: 'm6FigCircle', ind: 'm6FigInd', biplot: 'm6FigBiplot', var_contrib: 'm6FigContrib', fa_loadings: 'm6FigFa' };
 function factorOpts(kind) {
-  const o = { axes: el('m6Axes').value || '1,2', palette: el('m6Palette').value, title: '' };
+  const o = Object.assign({ axes: el('m6Axes').value || '1,2', palette: el('m6Palette').value, title: '' }, m6StyleExtra());
   if (kind === 'ind' || kind === 'biplot') { o.group = el('m6Group').value || null; o.ellipse = el('m6Ellipse').checked; o.ellipse_kind = el('m6EllipseKind').value; }
   if (kind === 'var_circle') o.color_by = el('m6CircleColor').value;
   if (kind === 'var_contrib') o.axes = (el('m6ContribDim').value || '1') + ',1';
@@ -148,7 +161,7 @@ async function renderFactorFig(kind) {
   const box = el(FFIG[kind]); if (!box) return;
   box.classList.add('loading');
   try {
-    const uri = await runPy(`factor_fig(${JSON.stringify(kind)}, "png", 140, ${JSON.stringify(B6.theme)}, ${JSON.stringify(JSON.stringify(factorOpts(kind)))})`);
+    const uri = await runPy(`factor_fig(${JSON.stringify(kind)}, "png", 170, ${JSON.stringify(B6.theme)}, ${JSON.stringify(JSON.stringify(factorOpts(kind)))})`);
     box.innerHTML = `<img src="${uri}"><div class="fig-dl">${['png', 'svg', 'pdf'].map(f => `<button class="btn btn-secondary btn-xs" data-k="${kind}" data-f="${f}">${f.toUpperCase()}</button>`).join('')}</div>`;
     els('button', box).forEach(b => b.addEventListener('click', () => expFactor(b.dataset.k, b.dataset.f)));
   } catch (err) { box.innerHTML = `<p class="msg msg-error">${(err.message || '').split('\n').slice(-2).join(' ')}</p>`; }
@@ -161,11 +174,12 @@ async function expFactor(kind, fmt) {
     if (uri) download(dataURItoBlob(uri), `${slug(state.fileName)}_${B6.method}_${kind}.${fmt}`);
   } finally { hideSpinner(); }
 }
-['m6Axes', 'm6Group', 'm6Ellipse', 'm6EllipseKind', 'm6CircleColor', 'm6ContribDim', 'm6Palette', 'm6Theme'].forEach(id =>
+['m6Axes', 'm6Group', 'm6Ellipse', 'm6EllipseKind', 'm6CircleColor', 'm6ContribDim', 'm6Palette', 'm6Theme',
+ 'm6Font', 'm6FontScale', 'm6Grid', 'm6Legend'].forEach(id =>
   el(id) && el(id).addEventListener('change', () => {
-    if (!B6.factorDone) return;
     B6.theme = el('m6Theme').value;
-    clearTimeout(B6._ft); B6._ft = setTimeout(() => ['scree', 'var_circle', 'ind', 'biplot', 'var_contrib'].forEach(renderFactorFig), 200);
+    if (B6.factorDone) { clearTimeout(B6._ft); B6._ft = setTimeout(() => ['scree', 'var_circle', 'ind', 'biplot', 'var_contrib'].forEach(renderFactorFig), 200); }
+    if (B6.clustDone) { clearTimeout(B6._ct); B6._ct = setTimeout(() => ['scatter', 'silhouette', 'dendrogram', 'profile_heat', 'profile_parallel'].forEach(renderClustFig), 200); }
   }));
 el('m6Method').addEventListener('change', () => {
   el('m6FaOpts').style.display = el('m6Method').value === 'FA' ? 'flex' : 'none';
@@ -247,7 +261,7 @@ el('cl6Run').addEventListener('click', async () => {
 const CLFIG = { vat: 'cl6FigVat', optimal: 'cl6FigOpt', scatter: 'cl6FigScatter', silhouette: 'cl6FigSil',
   dendrogram: 'cl6FigDendro', profile_heat: 'cl6FigProfHeat', profile_parallel: 'cl6FigProfPar', compare_group: 'cl6FigCompare' };
 function clustOpts(kind) {
-  const o = { palette: el('cl6Palette').value, title: '' };
+  const o = Object.assign({ palette: el('cl6Palette').value, title: '' }, m6StyleExtra());
   if (kind === 'scatter') { o.ellipse = el('cl6Ellipse').checked; o.ellipse_kind = el('cl6EllipseKind').value; }
   if (kind === 'dendrogram') o.k = +el('cl6K').value || 3;
   if (kind === 'compare_group') o.group = el('cl6Group').value;
@@ -257,7 +271,7 @@ async function renderClustFig(kind) {
   const box = el(CLFIG[kind]); if (!box) return;
   box.classList.add('loading');
   try {
-    const uri = await runPy(`clust_fig(${JSON.stringify(kind)}, "png", 140, ${JSON.stringify(el('m6Theme').value || 'StatsPro')}, ${JSON.stringify(JSON.stringify(clustOpts(kind)))})`);
+    const uri = await runPy(`clust_fig(${JSON.stringify(kind)}, "png", 170, ${JSON.stringify(el('m6Theme').value || 'StatsPro')}, ${JSON.stringify(JSON.stringify(clustOpts(kind)))})`);
     box.innerHTML = `<img src="${uri}"><div class="fig-dl">${['png', 'svg', 'pdf'].map(f => `<button class="btn btn-secondary btn-xs" data-k="${kind}" data-f="${f}">${f.toUpperCase()}</button>`).join('')}</div>`;
     els('button', box).forEach(b => b.addEventListener('click', () => expClust(b.dataset.k, b.dataset.f)));
   } catch (err) { box.innerHTML = `<p class="msg msg-error">${(err.message || '').split('\n').slice(-2).join(' ')}</p>`; }

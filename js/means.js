@@ -14,7 +14,12 @@ function buildMeans() {
     : '<p class="hint">Sin variables categóricas: la comparación de medias necesita al menos un factor.</p>';
   el('m4Theme').innerHTML = ['StatsPro', 'Minimal', 'Publicacion', 'Cuadricula', 'Clasico', 'Oscuro'].map(t => `<option>${t}</option>`).join('');
   el('m4Palette').innerHTML = ['StatsPro', 'Okabe-Ito', 'Vivo', 'Tierra', 'Pastel', 'Set2', 'Dark2', 'Viridis'].map(t => `<option>${t}</option>`).join('');
+  el('m4Legend').innerHTML = LEGEND_OPTS.map(([v, l]) => `<option value="${v}">${l}</option>`).join('');
+  getFontList().then(fonts => {
+    el('m4Font').innerHTML = fonts.map(f => `<option value="${f.id}" ${f.id === 'Inter' ? 'selected' : ''}>${f.label}</option>`).join('');
+  });
 }
+el('m4FontScale').addEventListener('input', () => { el('m4FontScaleV').textContent = (+el('m4FontScale').value).toFixed(2); });
 
 el('m4Factors').addEventListener('change', () => {
   el('m4InterWrap').style.display = els('#m4Factors input:checked').length >= 2 ? 'flex' : 'none';
@@ -126,15 +131,20 @@ async function runPosthoc() {
 
 const MFIGS = { cld: 'm4FigCld', tukey_ci: 'm4FigTukey', box_signif: 'm4FigBox', interaction: 'm4FigInter' };
 function figArgs(kind, fmt, dpi) {
+  const legendV = el('m4Legend').value;
+  const legendShow = legendV === 'oculta' ? 'False' : 'True';
+  const legendPos = (legendV === 'auto' || legendV === 'oculta') ? 'None' : JSON.stringify(legendV);
   return `${JSON.stringify(kind)}, ${JSON.stringify(fmt)}, ${dpi}, ${JSON.stringify(el('m4Theme').value)}, ${JSON.stringify(el('m4Palette').value)}, ` +
     `7.6, 5.0, ${JSON.stringify(el('m4Err').value)}, ${JSON.stringify(el('m4Style').value)}, ` +
-    `${JSON.stringify(el('m4Title').value)}, ${JSON.stringify(el('m4Ylab').value)}`;
+    `${JSON.stringify(el('m4Title').value)}, ${JSON.stringify(el('m4Ylab').value)}, ` +
+    `${JSON.stringify(el('m4Font').value)}, ${+el('m4FontScale').value || 1}, ${el('m4Grid').checked ? 'True' : 'False'}, ` +
+    `${legendShow}, ${legendPos}`;
 }
 async function renderMeansFig(kind) {
   const box = el(MFIGS[kind]); if (!box) return;
   box.classList.add('loading');
   try {
-    const uri = await runPy(`means_fig(${figArgs(kind, 'png', 140)})`);
+    const uri = await runPy(`means_fig(${figArgs(kind, 'png', 170)})`);
     box.innerHTML = `<img src="${uri}">
       <div class="fig-dl">${['png', 'svg', 'pdf'].map(f => `<button class="btn btn-secondary btn-xs" data-k="${kind}" data-f="${f}">${f.toUpperCase()}</button>`).join('')}</div>`;
     els('button', box).forEach(b => b.addEventListener('click', () => exportMeansFig(b.dataset.k, b.dataset.f)));
@@ -150,7 +160,7 @@ async function exportMeansFig(kind, fmt) {
   } finally { hideSpinner(); }
 }
 
-['m4Theme', 'm4Palette', 'm4Err', 'm4Style', 'm4Title', 'm4Ylab'].forEach(id =>
+['m4Theme', 'm4Palette', 'm4Err', 'm4Style', 'm4Title', 'm4Ylab', 'm4Font', 'm4FontScale', 'm4Grid', 'm4Legend'].forEach(id =>
   el(id).addEventListener('input', debounceMeansFigs));
 let mfTimer;
 function debounceMeansFigs() {

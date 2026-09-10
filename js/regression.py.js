@@ -409,11 +409,12 @@ def _pred_for(name, xgrid):
         except Exception: pass
     return np.full_like(xgrid, np.nan)
 
-def reg_fig(name, kind, fmt='png', dpi=140, theme='StatsPro', width=7.4, height=4.8):
-    apply_theme(theme)
+def reg_fig(name, kind, fmt='png', dpi=140, theme='StatsPro', width=7.4, height=4.8, opts_json='{}'):
+    o_ed = json.loads(opts_json) if opts_json else {}
+    apply_theme(theme, o_ed.get('font'), float(o_ed.get('font_scale', 1.0)), o_ed.get('grid'))
     d = R['d']; resp = R['resp']; nums = R['nums']; y = R['y']
     o = R['obj'].get(name); m = R['models'].get(name)
-    fig, ax = plt.subplots(figsize=(float(width), float(height)))
+    fig, ax = plt.subplots(figsize=(float(o_ed.get('width', width)), float(o_ed.get('height', height))))
 
     if kind == 'compare':
         vals = sorted([v for v in R['models'].values() if v['RMSE_cv'] is not None], key=lambda v: v['RMSE_cv'])
@@ -422,8 +423,8 @@ def reg_fig(name, kind, fmt='png', dpi=140, theme='StatsPro', width=7.4, height=
         ax.barh(range(len(names)), rm, color=cols, alpha=0.9, edgecolor='white')
         ax.set_yticks(range(len(names))); ax.set_yticklabels(names, fontsize=8)
         ax.set_xlabel('RMSE por validación cruzada (5 particiones)')
-        ax.set_title('Comparación de modelos — menor es mejor')
-        fig.tight_layout(); return fig_to_uri(fig, fmt, int(dpi))
+        ax.set_title(o_ed.get('title') or 'Comparación de modelos — menor es mejor')
+        fig.tight_layout(); finish_common(fig, o_ed); return fig_to_uri(fig, fmt, int(dpi))
 
     pred = o['pred'] if o else None
     if kind == 'fit' and R['single'] and pred is not None:
@@ -486,6 +487,8 @@ def reg_fig(name, kind, fmt='png', dpi=140, theme='StatsPro', width=7.4, height=
         except Exception:
             ax.text(0.5, 0.5, 'Sin coeficientes con IC para este modelo', ha='center')
 
+    if o_ed.get('title'): ax.set_title(o_ed['title'])
     fig.tight_layout()
+    finish_common(fig, o_ed)
     return fig_to_uri(fig, fmt, int(dpi))
 `;

@@ -108,11 +108,13 @@ main { max-width: 1080px; margin: 0 auto; padding: 0 20px 70px; }
   background: var(--card-bg); border: 1px solid var(--border); color: inherit;
   font: inherit; transition: border-color .15s, transform .15s;
 }
-.feat:hover { border-color: var(--primary); transform: translateY(-2px); }
+.feat:hover { border-color: var(--primary); transform: translateY(-2px); box-shadow: var(--shadow); }
+.feat-art { flex: 0 0 auto; width: 40px; height: 40px; }
+.feat-art svg { width: 100%; height: 100%; display: block; }
 .feat-n {
-  flex: 0 0 auto; width: 28px; height: 28px; border-radius: 8px;
-  display: grid; place-items: center; font-size: 0.82rem; font-weight: 700;
-  background: var(--primary-soft); color: var(--primary);
+  display: inline-flex; width: 19px; height: 19px; border-radius: 50%; margin-right: 7px;
+  align-items: center; justify-content: center; font-size: 0.7rem; font-weight: 700;
+  background: var(--primary-soft); color: var(--primary); vertical-align: -3px;
 }
 .feat-t { display: block; font-weight: 600; margin-bottom: 3px; }
 .feat-d { display: block; font-size: 0.83rem; color: var(--text-muted); line-height: 1.5; }
@@ -235,6 +237,12 @@ tr:hover td { background: rgba(76,120,168,0.05); }
 .opt-grid label.ck input { flex-shrink: 0; }
 .opt-grid select, .opt-grid input[type=text], .opt-grid input[type=number] { width: 100%; }
 .rv { font-variant-numeric: tabular-nums; color: var(--text); }
+.style-bar {
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)) !important;
+  background: var(--bg); border: 1px solid var(--border); border-radius: 10px;
+  padding: 12px 14px; margin: 10px 0 14px;
+}
+.style-bar input[type=range] { width: 100%; }
 .mini-check { display: grid; gap: 2px; }
 .mini-check label { flex-direction: row; align-items: center; gap: 6px; font-size: 0.78rem; }
 

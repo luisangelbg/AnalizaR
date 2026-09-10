@@ -382,28 +382,33 @@ def _draw(name, ax=None):
         ax.set_xlabel('Apalancamiento (hat)'); ax.set_ylabel('Residual estudentizado'); ax.set_title('Gráfico de influencia (tamaño ∝ Cook)')
         ax.legend(fontsize=7)
 
-def _panel4():
-    apply_theme(A.get('theme', 'StatsPro'))
+def _panel4(title=None):
+    apply_theme(A.get('theme', 'StatsPro'), A.get('font'), A.get('font_scale', 1.0), A.get('grid'))
     fig, axes = plt.subplots(2, 2, figsize=(11, 8.4))
     for nm, a in zip(['resid_fitted', 'qq', 'scale_location', 'influence'], axes.ravel()):
         _draw(nm, a)
-    fig.suptitle('Diagnóstico del modelo — %s' % A['resp'], fontsize=15, fontweight='bold')
+    fig.suptitle(title or ('Diagnóstico del modelo — %s' % A['resp']), fontsize=15, fontweight='bold')
     fig.tight_layout()
     return fig
 
-def assump_fig(name, fmt='png', dpi=140, theme='StatsPro', width=7.4, height=5.0):
-    A['theme'] = theme
-    apply_theme(theme)
+def assump_fig(name, fmt='png', dpi=140, theme='StatsPro', width=7.4, height=5.0, opts_json='{}'):
+    o = json.loads(opts_json) if opts_json else {}
+    A['theme'] = theme; A['font'] = o.get('font'); A['font_scale'] = float(o.get('font_scale', 1.0)); A['grid'] = o.get('grid')
+    apply_theme(theme, o.get('font'), float(o.get('font_scale', 1.0)), o.get('grid'))
     if name == 'panel4':
-        return fig_to_uri(_panel4(), fmt, int(dpi))
+        fig = _panel4(o.get('title'))
+        finish_common(fig, o)
+        return fig_to_uri(fig, fmt, int(dpi))
     fig, ax = plt.subplots(figsize=(float(width), float(height)))
     _draw(name, ax)
+    if o.get('title'): ax.set_title(o['title'])
     fig.tight_layout()
+    finish_common(fig, o)
     return fig_to_uri(fig, fmt, int(dpi))
 
-def all_figs(theme='StatsPro'):
+def all_figs(theme='StatsPro', opts_json='{}'):
     A['theme'] = theme
     names = ['panel4', 'qq', 'pp', 'hist_resid', 'resid_fitted', 'scale_location',
              'resid_box_group', 'sd_group', 'resid_order', 'acf', 'cooks', 'influence']
-    return json.dumps({nm: assump_fig(nm, 'png', 140, theme) for nm in names})
+    return json.dumps({nm: assump_fig(nm, 'png', 170, theme, opts_json=opts_json) for nm in names})
 `;

@@ -40,7 +40,7 @@
       <div class="hero-inner">
         <div>
           <div class="eyebrow">Estadística descriptiva, inferencial y multivariada</div>
-          <h1>Del dato crudo a la <span class="accent">figura lista para publicar</span></h1>
+          <h1>Estadística rigurosa, <span class="accent">sin código</span></h1>
           <p class="lead">Sube tu hoja de cálculo y StatsPro se encarga del resto: estadística descriptiva con
             gráficas editables, <b>comprobación de los supuestos del ANOVA</b>, <b>regresión y comparación de medias</b>
             (Tukey, Duncan y otros 12 métodos), <b>correlación</b> y <b>análisis multivariado</b> (PCA, FAMD/MCA y
@@ -214,11 +214,6 @@
           <input type="checkbox" id="a3Inter" checked> Incluir interacción entre factores
         </label>
       </div>
-      <div class="config-group">
-        <label class="inline-label">Tema de las figuras <select id="a3Theme"></select></label>
-        <label class="inline-label" style="margin-left:14px">DPI de exportación
-          <select id="a3Dpi"><option>150</option><option selected>300</option><option>450</option><option>600</option></select></label>
-      </div>
       <button class="btn btn-primary btn-lg" id="a3RunBtn">Analizar supuestos →</button>
       <div class="messages" id="a3Messages"></div>
     </div>
@@ -233,7 +228,8 @@
 
       <div class="card">
         <h2>Diagnóstico general</h2>
-        <p class="hint">Empieza por aquí: un vistazo rápido a los cuatro gráficos de diagnóstico.</p>
+        <p class="hint">Empieza por aquí: un vistazo rápido a los cuatro gráficos de diagnóstico. Edita el estilo de <b>todas</b> las figuras de este bloque abajo — se aplica al instante.</p>
+        <div id="a3StyleBar"></div>
         <div id="a3Figs" class="fig-gallery"></div>
       </div>
 
@@ -322,11 +318,6 @@
           <h3>Predictores categóricos (X)</h3>
           <div class="checkbox-grid" id="r4CatX"></div>
         </div>
-        <div class="config-group">
-          <label class="inline-label">Tema de figuras <select id="r4Theme"></select></label>
-          <label class="inline-label" style="margin-left:14px">DPI exportación
-            <select id="r4Dpi"><option>150</option><option selected>300</option><option>450</option><option>600</option></select></label>
-        </div>
         <button class="btn btn-primary btn-lg" id="r4RunBtn">Ajustar y comparar modelos →</button>
         <div class="messages" id="r4Messages"></div>
 
@@ -356,6 +347,8 @@
             </div>
             <div id="r4DetailTiles" class="results-summary"></div>
             <div id="r4DetailBox"></div>
+            <p class="hint">Edita el estilo de todas las figuras de este bloque:</p>
+            <div id="r4StyleBar"></div>
             <div class="fig-gallery">
               <div class="fig-card"><b>Ajuste</b><div id="r4FigFit"></div></div>
               <div class="fig-card"><b>Residuales vs. predichos</b><div id="r4FigResid"></div></div>
@@ -470,6 +463,10 @@
             <label>Barra de error <select id="m4Err">
               <option value="ci95">IC 95%</option><option value="se">Error estándar</option><option value="sd">Desv. estándar</option></select></label>
             <label>Estilo <select id="m4Style"><option value="point">Puntos</option><option value="bar">Barras</option></select></label>
+            <label>Fuente <select id="m4Font"></select></label>
+            <label>Tamaño de fuente <input type="range" id="m4FontScale" min="0.75" max="1.6" step="0.05" value="1"><span id="m4FontScaleV" class="rv">1.00</span></label>
+            <label class="ck"><input type="checkbox" id="m4Grid" checked> Cuadrícula</label>
+            <label>Leyenda <select id="m4Legend"></select></label>
             <label>Título <input type="text" id="m4Title" placeholder="(opcional)"></label>
             <label>Etiqueta Y <input type="text" id="m4Ylab" placeholder="(automático)"></label>
             <label>DPI <select id="m4Dpi"><option>150</option><option selected>300</option><option>450</option><option>600</option></select></label>
@@ -495,6 +492,8 @@
         <button class="subtab" data-tab="cat">Categóricas</button>
         <button class="subtab" data-tab="cca">Canónica</button>
       </div>
+      <p class="hint">Estilo de todas las figuras de este bloque (se aplica a cualquier pestaña):</p>
+      <div id="c5StyleBar"></div>
       <div class="messages" id="c5Messages"></div>
 
       <!-- MATRIZ -->
@@ -510,8 +509,6 @@
           <label>Ajuste de p
             <select id="c5Padj"><option value="holm">Holm</option><option value="bh">Benjamini-Hochberg</option>
               <option value="bonferroni">Bonferroni</option><option value="sidak">Šidák</option><option value="ninguno">ninguno</option></select></label>
-          <label>Tema figuras <select id="c5Theme"></select></label>
-          <label>DPI <select id="c5Dpi"><option>150</option><option selected>300</option><option>450</option><option>600</option></select></label>
           <label class="ck"><input type="checkbox" id="c5Cluster" checked> Ordenar por conglomerados</label>
           <label>Mostrar <select id="c5Mask"><option value="none">matriz completa</option><option value="upper">sólo triángulo inferior</option><option value="lower">sólo triángulo superior</option></select></label>
           <label>Red: |r| mínimo <input type="number" id="c5NetThr" value="0.3" min="0.1" max="0.95" step="0.05"></label>
@@ -646,6 +643,10 @@
         <div class="opt-grid" style="grid-template-columns:repeat(auto-fill,minmax(150px,1fr));margin-top:10px">
           <label>Tema figuras <select id="m6Theme"></select></label>
           <label>Paleta <select id="m6Palette"></select></label>
+          <label>Fuente <select id="m6Font"></select></label>
+          <label>Tamaño de fuente <input type="range" id="m6FontScale" min="0.75" max="1.6" step="0.05" value="1"><span id="m6FontScaleV" class="rv">1.00</span></label>
+          <label class="ck"><input type="checkbox" id="m6Grid" checked> Cuadrícula</label>
+          <label>Leyenda <select id="m6Legend"></select></label>
           <label>DPI <select id="m6Dpi"><option>150</option><option selected>300</option><option>450</option><option>600</option></select></label>
         </div>
       </div>
@@ -815,6 +816,7 @@
 <script src="js/core.js"></script>
 <script src="js/ui.js"></script>
 <script src="js/pyodide-core.js"></script>
+<script src="js/figstyle.js"></script>
 <script src="js/descriptive.py.js"></script>
 <script src="js/assumptions.py.js"></script>
 <script src="js/regression.py.js"></script>
