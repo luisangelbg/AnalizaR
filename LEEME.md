@@ -1,4 +1,4 @@
-# AnalizaR
+# StatsPro
 
 Entorno local para análisis estadístico **sin programar**: subes una hoja de cálculo
 y obtienes estadística descriptiva, gráficas editables de calidad para publicación,
@@ -31,6 +31,9 @@ Mira `datos/iris.csv` como plantilla: 4 columnas numéricas + 1 categórica (`Sp
 
 ## Estado
 
+- **Inicio — LISTO:** portada con arte SVG propio (comparación de medias, regresión/correlación y
+  mapa multivariado con elipses), recorrido de los 6 bloques, tarjetas clicables y botones para
+  empezar con tus datos o ver el ejemplo de iris.
 - **Bloque 1 — Datos — LISTO:** carga de `.xlsx`/`.csv`, detección automática de tipo de
   variable (numérica / categórica / excluir), resumen del conjunto (observaciones,
   faltantes, duplicados) y vista previa.
@@ -125,7 +128,7 @@ Mira `datos/iris.csv` como plantilla: 4 columnas numéricas + 1 categórica (`Sp
     asignación.
   - Todas las figuras exportables en PNG/SVG/PDF.
 
-**AnalizaR está completo: los 6 bloques funcionan.**
+**StatsPro está completo: los 6 bloques funcionan.**
 
 ## Archivos
 
@@ -136,6 +139,7 @@ css/style.css         estilos
 datos/iris.csv        datos de ejemplo (plantilla de formato)
 js/core.js            estado + utilidades (tablas, CSV, descargas)
 js/ui.js              navegación y spinner
+js/home.js            bloque de Inicio (portada, arte SVG, recorrido y tarjetas)
 js/pyodide-core.js    carga de Python + temas y paletas de figuras
 js/descriptive.py.js  código Python del Bloque 2
 js/data.js            Bloque 1 (carga y tipado de datos)

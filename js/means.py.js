@@ -365,9 +365,9 @@ def _method_note(m):
     }.get(m, '')
 
 # ================= FIGURAS =================
-def _colors(n): return palette_colors(M.get('palette', 'AnalizaR'), n)
+def _colors(n): return palette_colors(M.get('palette', 'StatsPro'), n)
 
-def means_fig(kind, fmt='png', dpi=140, theme='AnalizaR', palette='AnalizaR', width=7.6, height=5.0,
+def means_fig(kind, fmt='png', dpi=140, theme='StatsPro', palette='StatsPro', width=7.6, height=5.0,
               errbar='ci95', style='point', title='', ylab=''):
     apply_theme(theme); M['palette'] = palette
     ph = M.get('last_ph'); d = M['d']; resp = M['resp']

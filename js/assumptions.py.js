@@ -243,7 +243,7 @@ def recommendation_block(norm_v, homo_v, indep_v):
 # ================= FIGURAS =================
 def _cell_colors():
     cells = list(pd.unique(A['cell']))
-    cols = palette_colors('AnalizaR', len(cells))
+    cols = palette_colors('StatsPro', len(cells))
     return cells, {c: cols[i] for i, c in enumerate(cells)}
 
 def _qq_envelope(x, B=400):
@@ -383,7 +383,7 @@ def _draw(name, ax=None):
         ax.legend(fontsize=7)
 
 def _panel4():
-    apply_theme(A.get('theme', 'AnalizaR'))
+    apply_theme(A.get('theme', 'StatsPro'))
     fig, axes = plt.subplots(2, 2, figsize=(11, 8.4))
     for nm, a in zip(['resid_fitted', 'qq', 'scale_location', 'influence'], axes.ravel()):
         _draw(nm, a)
@@ -391,7 +391,7 @@ def _panel4():
     fig.tight_layout()
     return fig
 
-def assump_fig(name, fmt='png', dpi=140, theme='AnalizaR', width=7.4, height=5.0):
+def assump_fig(name, fmt='png', dpi=140, theme='StatsPro', width=7.4, height=5.0):
     A['theme'] = theme
     apply_theme(theme)
     if name == 'panel4':
@@ -401,7 +401,7 @@ def assump_fig(name, fmt='png', dpi=140, theme='AnalizaR', width=7.4, height=5.0
     fig.tight_layout()
     return fig_to_uri(fig, fmt, int(dpi))
 
-def all_figs(theme='AnalizaR'):
+def all_figs(theme='StatsPro'):
     A['theme'] = theme
     names = ['panel4', 'qq', 'pp', 'hist_resid', 'resid_fitted', 'scale_location',
              'resid_box_group', 'sd_group', 'resid_order', 'acf', 'cooks', 'influence']

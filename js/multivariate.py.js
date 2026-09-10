@@ -275,11 +275,11 @@ def _ellipse(ax, pts, color, kind='conf', alpha=0.15):
     w, h = 2 * np.sqrt(vals * k)
     ax.add_patch(Ellipse(mu, w, h, angle=ang, facecolor=color, edgecolor=color, alpha=alpha, lw=1.5))
 
-def factor_fig(kind, fmt='png', dpi=140, theme='AnalizaR', opts_json='{}'):
+def factor_fig(kind, fmt='png', dpi=140, theme='StatsPro', opts_json='{}'):
     o = json.loads(opts_json); apply_theme(theme)
     ev = V['ev']; pct = V['pct']; scores = V['scores']; load = V['load']; colinfo = V['colinfo']
     ax_i, ax_j = [int(x) - 1 for x in o.get('axes', '1,2').split(',')]
-    pal = o.get('palette', 'AnalizaR')
+    pal = o.get('palette', 'StatsPro')
     fig, ax = plt.subplots(figsize=(float(o.get('w', 7.2)), float(o.get('h', 5.6))))
 
     if kind == 'scree':

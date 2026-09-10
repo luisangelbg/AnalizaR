@@ -1,7 +1,7 @@
 /* Bloque 4a — Regresión (controlador JS). */
 
 let regReady = false;
-const R4 = { fitted: false, theme: 'AnalizaR' };
+const R4 = { fitted: false, theme: 'StatsPro' };
 
 document.addEventListener('analizar:data', build4);
 initTabs('panel-4');
@@ -14,7 +14,7 @@ function build4() {
   el('r4CatX').innerHTML = cats.length
     ? cats.map(c => `<label class="checkbox-label"><input type="checkbox" value="${c}"> ${c}</label>`).join('')
     : '<p class="hint">Sin variables categóricas.</p>';
-  el('r4Theme').innerHTML = ['AnalizaR', 'Minimal', 'Publicacion', 'Cuadricula', 'Clasico', 'Oscuro'].map(t => `<option>${t}</option>`).join('');
+  el('r4Theme').innerHTML = ['StatsPro', 'Minimal', 'Publicacion', 'Cuadricula', 'Clasico', 'Oscuro'].map(t => `<option>${t}</option>`).join('');
   // no permitir respuesta como predictor
   el('r4Resp').addEventListener('change', () => {
     els('#r4NumX input').forEach(i => { i.disabled = i.value === el('r4Resp').value; if (i.disabled) i.checked = false; });

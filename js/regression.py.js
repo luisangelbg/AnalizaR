@@ -409,7 +409,7 @@ def _pred_for(name, xgrid):
         except Exception: pass
     return np.full_like(xgrid, np.nan)
 
-def reg_fig(name, kind, fmt='png', dpi=140, theme='AnalizaR', width=7.4, height=4.8):
+def reg_fig(name, kind, fmt='png', dpi=140, theme='StatsPro', width=7.4, height=4.8):
     apply_theme(theme)
     d = R['d']; resp = R['resp']; nums = R['nums']; y = R['y']
     o = R['obj'].get(name); m = R['models'].get(name)

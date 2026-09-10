@@ -1,7 +1,7 @@
 /* Bloque 6 — Multivariado (controlador JS): recomendación + factorial + clustering. */
 
 let mvReady = false, clustReady = false;
-const B6 = { prepared: false, theme: 'AnalizaR', factorDone: false, clustPrepared: false };
+const B6 = { prepared: false, theme: 'StatsPro', factorDone: false, clustPrepared: false };
 
 document.addEventListener('analizar:data', build6);
 initTabs('panel-6');
@@ -12,8 +12,8 @@ function build6() {
   const chk = (v, c) => `<label class="checkbox-label"><input type="checkbox" value="${v}" ${c ? 'checked' : ''}> ${v}</label>`;
   el('m6Nums').innerHTML = nums.map(v => chk(v, true)).join('');
   el('m6Cats').innerHTML = cats.length ? cats.map(v => chk(v, false)).join('') : '<p class="hint">Sin variables categóricas.</p>';
-  el('m6Theme').innerHTML = ['AnalizaR', 'Minimal', 'Publicacion', 'Cuadricula', 'Clasico', 'Oscuro'].map(t => `<option>${t}</option>`).join('');
-  el('m6Palette').innerHTML = ['AnalizaR', 'Okabe-Ito', 'Vivo', 'Tierra', 'Pastel', 'Set2', 'Dark2', 'Viridis'].map(t => `<option>${t}</option>`).join('');
+  el('m6Theme').innerHTML = ['StatsPro', 'Minimal', 'Publicacion', 'Cuadricula', 'Clasico', 'Oscuro'].map(t => `<option>${t}</option>`).join('');
+  el('m6Palette').innerHTML = ['StatsPro', 'Okabe-Ito', 'Vivo', 'Tierra', 'Pastel', 'Set2', 'Dark2', 'Viridis'].map(t => `<option>${t}</option>`).join('');
   el('m6Group').innerHTML = `<option value="">— ninguno —</option>` + cats.map(c => `<option>${c}</option>`).join('');
   el('cl6Group').innerHTML = `<option value="">— ninguno —</option>` + cats.map(c => `<option>${c}</option>`).join('');
 }
@@ -257,7 +257,7 @@ async function renderClustFig(kind) {
   const box = el(CLFIG[kind]); if (!box) return;
   box.classList.add('loading');
   try {
-    const uri = await runPy(`clust_fig(${JSON.stringify(kind)}, "png", 140, ${JSON.stringify(el('m6Theme').value || 'AnalizaR')}, ${JSON.stringify(JSON.stringify(clustOpts(kind)))})`);
+    const uri = await runPy(`clust_fig(${JSON.stringify(kind)}, "png", 140, ${JSON.stringify(el('m6Theme').value || 'StatsPro')}, ${JSON.stringify(JSON.stringify(clustOpts(kind)))})`);
     box.innerHTML = `<img src="${uri}"><div class="fig-dl">${['png', 'svg', 'pdf'].map(f => `<button class="btn btn-secondary btn-xs" data-k="${kind}" data-f="${f}">${f.toUpperCase()}</button>`).join('')}</div>`;
     els('button', box).forEach(b => b.addEventListener('click', () => expClust(b.dataset.k, b.dataset.f)));
   } catch (err) { box.innerHTML = `<p class="msg msg-error">${(err.message || '').split('\n').slice(-2).join(' ')}</p>`; }
@@ -266,7 +266,7 @@ async function renderClustFig(kind) {
 async function expClust(kind, fmt) {
   showSpinner('Exportando…');
   try {
-    const uri = await runPy(`clust_fig(${JSON.stringify(kind)}, ${JSON.stringify(fmt)}, ${+el('cl6Dpi').value || 300}, ${JSON.stringify(el('m6Theme').value || 'AnalizaR')}, ${JSON.stringify(JSON.stringify(clustOpts(kind)))})`);
+    const uri = await runPy(`clust_fig(${JSON.stringify(kind)}, ${JSON.stringify(fmt)}, ${+el('cl6Dpi').value || 300}, ${JSON.stringify(el('m6Theme').value || 'StatsPro')}, ${JSON.stringify(JSON.stringify(clustOpts(kind)))})`);
     if (uri) download(dataURItoBlob(uri), `${slug(state.fileName)}_cluster_${kind}.${fmt}`);
   } finally { hideSpinner(); }
 }

@@ -221,9 +221,9 @@ def _ell(ax, pts, color, kind='conf'):
     w, h = 2 * np.sqrt(np.maximum(vals, 0) * kk)
     ax.add_patch(Ellipse(mu, w, h, angle=ang, facecolor=color, edgecolor=color, alpha=.15, lw=1.5))
 
-def clust_fig(kind, fmt='png', dpi=140, theme='AnalizaR', opts_json='{}'):
+def clust_fig(kind, fmt='png', dpi=140, theme='StatsPro', opts_json='{}'):
     o = json.loads(opts_json); apply_theme(theme)
-    X = G['X']; D = G['D']; pal = o.get('palette', 'AnalizaR')
+    X = G['X']; D = G['D']; pal = o.get('palette', 'StatsPro')
     fig, ax = plt.subplots(figsize=(float(o.get('w', 7.2)), float(o.get('h', 5.4))))
 
     if kind == 'vat':

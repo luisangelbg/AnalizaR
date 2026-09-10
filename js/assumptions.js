@@ -1,7 +1,7 @@
 /* Bloque 3 — Supuestos del ANOVA (controlador JS). */
 
 let assumpReady = false;
-const A3 = { fitted: false, theme: 'AnalizaR' };
+const A3 = { fitted: false, theme: 'StatsPro' };
 
 const FIG_INFO = {
   panel4: ['Diagnóstico general (4 paneles)', 'El cuadro clásico de diagnóstico: residuales vs. ajustados, Q–Q, escala–ubicación e influencia. Ideal para incluir tal cual en una tesis.'],
@@ -27,7 +27,7 @@ function build3() {
   el('a3Factors').innerHTML = cats.length
     ? cats.map(c => `<label class="checkbox-label"><input type="checkbox" value="${c}"> ${c}</label>`).join('')
     : '<p class="hint">No hay variables categóricas. El análisis de supuestos del ANOVA necesita al menos un factor (grupo/tratamiento).</p>';
-  el('a3Theme').innerHTML = ['AnalizaR', 'Minimal', 'Publicacion', 'Cuadricula', 'Clasico', 'Oscuro']
+  el('a3Theme').innerHTML = ['StatsPro', 'Minimal', 'Publicacion', 'Cuadricula', 'Clasico', 'Oscuro']
     .map(t => `<option>${t}</option>`).join('');
 }
 

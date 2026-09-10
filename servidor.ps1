@@ -1,4 +1,4 @@
-# Servidor web local minimo para AnalizaR.
+# Servidor web local minimo para StatsPro.
 # Uso:  clic derecho > "Ejecutar con PowerShell"
 #       (o:  powershell -ExecutionPolicy Bypass -File servidor.ps1)
 # Luego abre  http://localhost:8770  en Chrome o Edge.
@@ -48,7 +48,7 @@ if (-not $lan) {
 
 $prefix = "http://localhost:$Port/"
 Write-Host ""
-Write-Host "  AnalizaR en marcha:  $prefix" -ForegroundColor Green
+Write-Host "  StatsPro en marcha:  $prefix" -ForegroundColor Green
 if ($lan) {
   $ips = Get-NetIPAddress -AddressFamily IPv4 -ErrorAction SilentlyContinue |
     Where-Object { $_.IPAddress -notlike '169.*' -and $_.IPAddress -ne '127.0.0.1' } |

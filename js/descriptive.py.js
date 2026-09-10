@@ -99,7 +99,7 @@ def _levels(df, g):
     return sorted(df[g].dropna().astype(str).unique().tolist())
 
 def _colors_for(opts, k):
-    pal = opts.get('palette','AnalizaR')
+    pal = opts.get('palette','StatsPro')
     return palette_colors(pal, max(k,1))
 
 def _lab(opts, key, default):
@@ -173,7 +173,7 @@ def _err(vals, kind):
     return m, (sd/np.sqrt(n) if n > 0 else 0)   # se
 
 def _render(opts):
-    apply_theme(opts.get('theme','AnalizaR'))
+    apply_theme(opts.get('theme','StatsPro'))
     fs = float(opts.get('font_scale', 1.0))
     if fs != 1.0:
         for k in ['font.size','axes.titlesize','axes.labelsize','legend.fontsize','xtick.labelsize','ytick.labelsize']:

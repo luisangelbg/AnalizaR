@@ -307,7 +307,7 @@ def _rd(x, y):  # datos limpios de un par
     d = K['d']; xv = pd.to_numeric(d[x], errors='coerce').values; yv = pd.to_numeric(d[y], errors='coerce').values
     m = np.isfinite(xv) & np.isfinite(yv); return xv[m], yv[m]
 
-def corr_fig(kind, fmt='png', dpi=140, theme='AnalizaR', opts_json='{}'):
+def corr_fig(kind, fmt='png', dpi=140, theme='StatsPro', opts_json='{}'):
     o = json.loads(opts_json); apply_theme(theme)
 
     if kind in ('heatmap', 'corrplot'):
@@ -375,7 +375,7 @@ def corr_fig(kind, fmt='png', dpi=140, theme='AnalizaR', opts_json='{}'):
         vs = [v for v in vs if v in K['nums']][:6]
         g = o.get('group'); d = K['d']
         gl = sorted(d[g].dropna().astype(str).unique()) if g else [None]
-        cmap = palette_colors(o.get('palette', 'AnalizaR'), len(gl))
+        cmap = palette_colors(o.get('palette', 'StatsPro'), len(gl))
         nn = len(vs)
         fig, axes = plt.subplots(nn, nn, figsize=(2 * nn, 2 * nn))
         for a in range(nn):
@@ -433,7 +433,7 @@ def corr_fig(kind, fmt='png', dpi=140, theme='AnalizaR', opts_json='{}'):
         fig, ax = plt.subplots(figsize=(7, 5.6))
         if g and g in K['d'].columns:
             gv = K['d'].loc[d.index, g].astype(str).values
-            gl = sorted(pd.unique(gv)); cm = palette_colors(o.get('palette', 'AnalizaR'), len(gl))
+            gl = sorted(pd.unique(gv)); cm = palette_colors(o.get('palette', 'StatsPro'), len(gl))
             for c, lv in zip(cm, gl):
                 mm = gv == lv
                 ax.scatter(Xc[mm], Yc[mm], s=34, color=c, alpha=.75, edgecolor='white', linewidth=.3, label=lv)

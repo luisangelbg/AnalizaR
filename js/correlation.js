@@ -1,7 +1,7 @@
 /* Bloque 5 — Correlación (controlador JS). */
 
 let corrReady = false;
-const C5 = { prepared: false, theme: 'AnalizaR' };
+const C5 = { prepared: false, theme: 'StatsPro' };
 
 document.addEventListener('analizar:data', build5);
 initTabs('panel-5');
@@ -10,7 +10,7 @@ function build5() {
   const nums = (state.info && state.info.numeric) || [];
   const cats = (state.info && state.info.categorical) || [];
   el('c5Vars').innerHTML = nums.map(v => `<label class="checkbox-label"><input type="checkbox" value="${v}" checked> ${v}</label>`).join('');
-  el('c5Theme').innerHTML = ['AnalizaR', 'Minimal', 'Publicacion', 'Cuadricula', 'Clasico', 'Oscuro'].map(t => `<option>${t}</option>`).join('');
+  el('c5Theme').innerHTML = ['StatsPro', 'Minimal', 'Publicacion', 'Cuadricula', 'Clasico', 'Oscuro'].map(t => `<option>${t}</option>`).join('');
   // par
   el('c5PairX').innerHTML = nums.map(v => `<option>${v}</option>`).join('');
   el('c5PairY').innerHTML = nums.map((v, i) => `<option ${i === 1 ? 'selected' : ''}>${v}</option>`).join('');
@@ -76,7 +76,7 @@ const CFIG = { heatmap: 'c5FigHeat', corrplot: 'c5FigCorrplot', network: 'c5FigN
 function corrFigOpts(kind) {
   const o = { title: '', cluster: el('c5Cluster').checked, mask: el('c5Mask').value };
   if (kind === 'network') o.thr = +el('c5NetThr').value || 0.3;
-  if (kind === 'pairs') { o.vars = els('#c5Vars input:checked').map(c => c.value).slice(0, 6); o.group = el('c5PairsGroup').value || null; o.palette = 'AnalizaR'; }
+  if (kind === 'pairs') { o.vars = els('#c5Vars input:checked').map(c => c.value).slice(0, 6); o.group = el('c5PairsGroup').value || null; o.palette = 'StatsPro'; }
   if (kind === 'pair') { o.x = el('c5PairX').value; o.y = el('c5PairY').value; }
   if (kind === 'cca_scatter' || kind === 'cca_loadings') { o.dim = +el('c5CcaDim').value || 1; o.group = el('c5CcaGroup').value || null; }
   return o;

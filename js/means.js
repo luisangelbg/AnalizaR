@@ -12,8 +12,8 @@ function buildMeans() {
   el('m4Factors').innerHTML = cats.length
     ? cats.map(c => `<label class="checkbox-label"><input type="checkbox" value="${c}"> ${c}</label>`).join('')
     : '<p class="hint">Sin variables categóricas: la comparación de medias necesita al menos un factor.</p>';
-  el('m4Theme').innerHTML = ['AnalizaR', 'Minimal', 'Publicacion', 'Cuadricula', 'Clasico', 'Oscuro'].map(t => `<option>${t}</option>`).join('');
-  el('m4Palette').innerHTML = ['AnalizaR', 'Okabe-Ito', 'Vivo', 'Tierra', 'Pastel', 'Set2', 'Dark2', 'Viridis'].map(t => `<option>${t}</option>`).join('');
+  el('m4Theme').innerHTML = ['StatsPro', 'Minimal', 'Publicacion', 'Cuadricula', 'Clasico', 'Oscuro'].map(t => `<option>${t}</option>`).join('');
+  el('m4Palette').innerHTML = ['StatsPro', 'Okabe-Ito', 'Vivo', 'Tierra', 'Pastel', 'Set2', 'Dark2', 'Viridis'].map(t => `<option>${t}</option>`).join('');
 }
 
 el('m4Factors').addEventListener('change', () => {

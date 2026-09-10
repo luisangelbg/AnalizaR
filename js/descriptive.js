@@ -36,8 +36,8 @@ const PLOT_KINDS = [
 const KIND_META = {};
 PLOT_KINDS.forEach(s => s.items.forEach(it => KIND_META[it.id] = it));
 
-const PALETTES = ['AnalizaR', 'Okabe-Ito', 'Vivo', 'Tierra', 'Pastel', 'Set2', 'Dark2', 'Viridis', 'Plasma', 'Cividis', 'Magma'];
-const THEMES = ['AnalizaR', 'Minimal', 'Publicacion', 'Cuadricula', 'Clasico', 'Oscuro'];
+const PALETTES = ['StatsPro', 'Okabe-Ito', 'Vivo', 'Tierra', 'Pastel', 'Set2', 'Dark2', 'Viridis', 'Plasma', 'Cividis', 'Magma'];
+const THEMES = ['StatsPro', 'Minimal', 'Publicacion', 'Cuadricula', 'Clasico', 'Oscuro'];
 
 function num() { return (state.info && state.info.numeric) || []; }
 function cat() { return (state.info && state.info.categorical) || []; }

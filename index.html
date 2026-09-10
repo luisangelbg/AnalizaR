@@ -3,18 +3,28 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AnalizaR — Análisis estadístico sin programar</title>
+<title>StatsPro — Análisis estadístico sin programar</title>
 <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
 
-<header class="app-header">
-  <h1>AnalizaR</h1>
-  <p class="subtitle">Estadística descriptiva, supuestos, regresión, correlación y análisis multivariado — con figuras de calidad para publicación, sin escribir una línea de código.</p>
+<header class="topbar">
+  <button class="brand" id="brandBtn" type="button">
+    <svg class="brand-mark" viewBox="0 0 512 512" aria-hidden="true">
+      <rect width="512" height="512" rx="112" fill="#3b5bdb"/>
+      <rect x="98"  y="300" width="66" height="128" rx="18" fill="#ffffff"/>
+      <rect x="188" y="230" width="66" height="198" rx="18" fill="#ffffff"/>
+      <rect x="278" y="150" width="66" height="278" rx="18" fill="#ffffff"/>
+      <circle cx="378" cy="118" r="30" fill="#8fb0ff"/>
+    </svg>
+    <span class="brand-name">StatsPro<span class="dot">.</span></span>
+  </button>
+  <span class="topbar-tag">Estadística sin programar</span>
 </header>
 
 <nav class="stepper" id="stepper">
-  <button class="step-btn active" data-step="1"><span class="step-num">1</span> Datos</button>
+  <button class="step-btn active" data-step="0"><span class="step-num">◆</span> Inicio</button>
+  <button class="step-btn" data-step="1"><span class="step-num">1</span> Datos</button>
   <button class="step-btn" data-step="2" disabled><span class="step-num">2</span> Descriptiva</button>
   <button class="step-btn" data-step="3" disabled><span class="step-num">3</span> Supuestos ANOVA</button>
   <button class="step-btn" data-step="4" disabled><span class="step-num">4</span> Regresión y medias</button>
@@ -24,8 +34,64 @@
 
 <main>
 
+  <!-- ============ INICIO ============ -->
+  <section class="step-panel active" id="panel-0">
+    <div class="hero">
+      <div class="hero-inner">
+        <div>
+          <div class="eyebrow">Estadística descriptiva, inferencial y multivariada</div>
+          <h1>Del dato crudo a la <span class="accent">figura lista para publicar</span></h1>
+          <p class="lead">Sube tu hoja de cálculo y StatsPro se encarga del resto: estadística descriptiva con
+            gráficas editables, <b>comprobación de los supuestos del ANOVA</b>, <b>regresión y comparación de medias</b>
+            (Tukey, Duncan y otros 12 métodos), <b>correlación</b> y <b>análisis multivariado</b> (PCA, FAMD/MCA y
+            clustering) — todo con figuras de calidad para tesis. Sin instalar nada, sin escribir una línea de código.</p>
+          <div class="hero-cta">
+            <button class="btn btn-primary btn-lg" id="startBtn">Empezar con mis datos →</button>
+            <button class="btn btn-secondary btn-lg" id="demoBtn">Ver el ejemplo de iris</button>
+            <button class="btn btn-ghost btn-lg" id="featBtn">Qué incluye ↓</button>
+          </div>
+          <div class="badge-row">
+            <span class="badge">Todo el cálculo ocurre en tu navegador</span>
+            <span class="badge">Ningún dato sale de tu computadora</span>
+            <span class="badge">Figuras PNG / SVG / PDF listas para publicar</span>
+            <span class="badge">Gratis y sin cuenta</span>
+          </div>
+        </div>
+        <div class="hero-art" id="heroArt"></div>
+      </div>
+    </div>
+
+    <h2 class="section-title">Cómo funciona</h2>
+    <p class="section-sub">Un recorrido de seis bloques. Cada uno revisa tus datos y te explica qué encontró antes
+      de pasar al siguiente; la decisión final siempre es tuya.</p>
+    <div class="workflow" id="workflow"></div>
+
+    <h2 class="section-title">Qué incluye</h2>
+    <p class="section-sub" id="featAnchor">Pulsa una tarjeta para ir directo a ese bloque.</p>
+    <div class="feature-grid" id="featureGrid"></div>
+
+    <div class="closing">
+      <div>
+        <h3>Por qué existe</h3>
+        <p>Programar el análisis nunca es lo difícil: cualquier paquete devuelve un valor p. Lo que decide si una tesis
+          o un artículo sostienen sus conclusiones son las decisiones de alrededor —¿se cumplen los supuestos?,
+          ¿qué prueba de medias corresponde?, ¿cuántos componentes retener?, ¿la relación es lineal?— y ahí la
+          mayoría de los programas calcula la cifra y se detiene. StatsPro pone el argumento metodológico junto
+          al número que lo justifica, en el momento en que hay que decidir.</p>
+      </div>
+      <div class="closing-side">
+        <div class="cite-label">Qué necesitas</div>
+        <ul>
+          <li>Un navegador reciente (Chrome, Edge o Firefox) — computadora, tablet o celular.</li>
+          <li>Conexión a internet la primera vez que abres cada bloque (para cargar Python).</li>
+          <li>Tus datos en una hoja de cálculo: primera fila con los nombres de las variables.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
   <!-- ============ PASO 1: DATOS ============ -->
-  <section class="step-panel active" id="panel-1">
+  <section class="step-panel" id="panel-1">
     <div class="card">
       <h2>1. Sube tu archivo de datos</h2>
       <p class="hint">Formato <b>.xlsx</b> o <b>.csv</b>. La <b>primera fila</b> debe tener los nombres de las variables
@@ -49,7 +115,7 @@
 
     <div class="card" id="dataConfigCard" style="display:none">
       <h2>Revisa las variables</h2>
-      <p class="hint">AnalizaR detectó automáticamente el tipo de cada columna. Ajusta si hace falta:
+      <p class="hint">StatsPro detectó automáticamente el tipo de cada columna. Ajusta si hace falta:
         una variable numérica con pocos valores enteros (p. ej. un código de tratamiento) suele convenir marcarla como <b>categórica</b>.</p>
       <div id="dataSummary" class="results-summary"></div>
       <div class="col-config" id="colConfig"></div>
@@ -241,7 +307,7 @@
 
       <!-- ---- SUB: REGRESIÓN ---- -->
       <div class="subtab-panel active" data-tab="reg">
-        <p class="hint">AnalizaR ajusta una batería de modelos (paramétricos y no paramétricos), los compara
+        <p class="hint">StatsPro ajusta una batería de modelos (paramétricos y no paramétricos), los compara
           por error de predicción con validación cruzada y te dice cuál es el mejor y qué tipo de regresión
           se acopla a tus datos.</p>
         <div class="config-group">
@@ -587,7 +653,7 @@
 
       <!-- RECOMENDACIÓN -->
       <div class="subtab-panel active" data-tab="rec">
-        <p class="hint">AnalizaR revisa tus datos (tipo de variables, factorabilidad con KMO y Bartlett,
+        <p class="hint">StatsPro revisa tus datos (tipo de variables, factorabilidad con KMO y Bartlett,
           tendencia de agrupamiento con Hopkins) y sugiere qué análisis multivariado encaja mejor.
           Al final tú decides.</p>
         <button class="btn btn-primary btn-lg" id="m6RunRec">Diagnosticar datos →</button>
@@ -654,7 +720,7 @@
           <label>Nº de dimensiones (si PCA) <input type="number" id="cl6Ndims" value="3" min="2" max="10"></label>
           <label class="ck"><input type="checkbox" id="cl6Std" checked> Estandarizar</label>
           <label>k máximo a explorar <input type="number" id="cl6Kmax" value="8" min="3" max="12"></label>
-          <label>Paleta <select id="cl6Palette"><option>AnalizaR</option><option>Vivo</option><option>Okabe-Ito</option><option>Set2</option><option>Dark2</option></select></label>
+          <label>Paleta <select id="cl6Palette"><option>StatsPro</option><option>Vivo</option><option>Okabe-Ito</option><option>Set2</option><option>Dark2</option></select></label>
           <label>DPI <select id="cl6Dpi"><option>150</option><option selected>300</option><option>450</option><option>600</option></select></label>
         </div>
         <button class="btn btn-primary btn-lg" id="cl6Prep">Preparar y explorar →</button>
@@ -738,7 +804,7 @@
 </main>
 
 <footer class="app-footer">
-  <p>AnalizaR — todo el procesamiento es local, en tu navegador. Ningún dato se sube a servidores.</p>
+  <p>StatsPro — todo el procesamiento es local, en tu navegador. Ningún dato se sube a servidores.</p>
 </footer>
 
 <div id="spinner" class="spinner-overlay" style="display:none">
@@ -763,6 +829,7 @@
 <script src="js/means.js"></script>
 <script src="js/correlation.js"></script>
 <script src="js/block6.js"></script>
+<script src="js/home.js"></script>
 <script src="js/main.js"></script>
 </body>
 </html>

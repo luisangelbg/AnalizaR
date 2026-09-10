@@ -1,4 +1,4 @@
-/* AnalizaR — estado global y utilidades comunes.
+/* StatsPro — estado global y utilidades comunes.
    Sin modulos ES: todo cuelga de window para no depender de bundlers. */
 
 const state = {

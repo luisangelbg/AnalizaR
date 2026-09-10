@@ -80,7 +80,7 @@ _LAST = {}   # ultima figura: {'kind':..., 'opts':...}
 
 # ---------------- paletas ----------------
 PALETTES = {
-    'AnalizaR':   ['#4C72B0','#DD8452','#55A868','#C44E52','#8172B3','#937860','#DA8BC3','#8C8C8C','#CCB974','#64B5CD'],
+    'StatsPro':   ['#4C72B0','#DD8452','#55A868','#C44E52','#8172B3','#937860','#DA8BC3','#8C8C8C','#CCB974','#64B5CD'],
     'Okabe-Ito':  ['#000000','#E69F00','#56B4E9','#009E73','#F0E442','#0072B2','#D55E00','#CC79A7'],
     'Vivo':       ['#2E86DE','#EE5253','#10AC84','#F368E0','#FF9F43','#576574','#00D2D3','#5F27CD'],
     'Tierra':     ['#8D6A5B','#C9A66B','#4F6D7A','#7A9E7E','#C36F4F','#3D405B','#A5668B','#606C38'],
@@ -96,7 +96,7 @@ def palette_colors(name, n):
     if isinstance(name, str) and name.startswith('__single__:'):
         return [name.split(':', 1)[1]] * max(n, 1)
     if not name:
-        return palette_colors('AnalizaR', n)
+        return palette_colors('StatsPro', n)
     if name in PALETTES and PALETTES[name] is not None:
         base = PALETTES[name]
         return [base[i % len(base)] for i in range(n)]
@@ -133,7 +133,7 @@ def apply_theme(t):
         base.update({'axes.grid':False,'axes.spines.top':True,'axes.spines.right':True})
     plt.rcParams.update(base)
 
-apply_theme('AnalizaR')
+apply_theme('StatsPro')
 
 def fig_to_uri(fig, fmt='png', dpi=140):
     buf = io.BytesIO()

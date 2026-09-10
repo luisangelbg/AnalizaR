@@ -1,5 +1,5 @@
-/* AnalizaR — arranque. */
-console.log('AnalizaR listo. Sube un archivo .xlsx o .csv para empezar.');
+/* StatsPro — arranque. */
+console.log('StatsPro listo. Sube un archivo .xlsx o .csv para empezar.');
 
 // aviso si se abrio con doble clic (file://) en vez del servidor
 if (location.protocol === 'file:') {
