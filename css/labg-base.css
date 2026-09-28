@@ -340,7 +340,8 @@ input:focus-visible, select:focus-visible, textarea:focus-visible { outline-offs
 }
 .step-footer .btn { max-width: 48%; }
 .step-footer .next { margin-left: auto; }
-.step-footer .btn small { display: block; font-weight: 500; font-size: var(--fs-xs); opacity: .8; }
+/* sin opacidad: sobre el botón primario, el 80 % bajaba el texto de 4.5:1 */
+.step-footer .btn small { display: block; font-weight: 500; font-size: var(--fs-xs); }
 
 /* ================================================================
    5. COMPONENTES
@@ -449,6 +450,7 @@ input[type="checkbox"], input[type="radio"], input[type="range"] { accent-color:
 
 /* --- tablas de resultados --- */
 .table-scroll {
+  position: relative;   /* contiene los textos para lector de pantalla (posición absoluta) */
   overflow-x: auto; border: 1px solid var(--border); border-radius: var(--r-md);
   background: var(--card-bg); -webkit-overflow-scrolling: touch;
 }
