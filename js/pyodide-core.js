@@ -1,7 +1,11 @@
 /* Carga perezosa de Pyodide (Python en el navegador).
-   Requiere abrir la app con servidor.ps1 + conexion a internet la primera vez. */
+   El interprete y sus bibliotecas viajan dentro de la app, en vendor/pyodide/, y se usan
+   cuando la app se abre con servidor.ps1: asi funciona sin internet. Si esa copia falta o
+   no carga, se usa la copia en linea. */
 
 const PYODIDE_VERSION = 'v0.27.2';
+const PYODIDE_CDN = `https://cdn.jsdelivr.net/pyodide/${PYODIDE_VERSION}/full/`;
+const PYODIDE_LOCAL = 'vendor/pyodide/';
 let _pyPromise = null;
 const _loadedPkgs = new Set();
 
@@ -13,17 +17,45 @@ async function loadScript(src) {
   });
 }
 
+/* La copia local solo sirve por http(s): con doble clic el navegador no deja leerla. */
+async function _localPyodideBase() {
+  if (!/^https?:$/.test(location.protocol)) return null;
+  const base = new URL(PYODIDE_LOCAL, location.href).href;
+  try {
+    const r = await fetch(base + 'pyodide-lock.json');
+    return r.ok ? base : null;
+  } catch (e) { return null; }
+}
+
+/* Arranca el interprete y las bibliotecas base desde una ubicacion. */
+async function _bootPyodide(base) {
+  if (!window.loadPyodide) await loadScript(base + 'pyodide.js');
+  setSpinner('Iniciando interprete de Python…');
+  const pyodide = await loadPyodide({ indexURL: base });
+  setSpinner('Cargando NumPy, pandas, SciPy, matplotlib…');
+  await pyodide.loadPackage(['numpy', 'pandas', 'scipy', 'matplotlib']);
+  return pyodide;
+}
+
+/* Primero la copia local; si falla, la copia en linea. */
+async function _startPyodide() {
+  const local = await _localPyodideBase();
+  if (local) {
+    try { return await _bootPyodide(local); }
+    catch (e) {
+      console.warn('No se pudo usar la copia local de Python; se usa la copia en linea.', e);
+      delete window.loadPyodide;
+    }
+  }
+  return _bootPyodide(PYODIDE_CDN);
+}
+
 async function getPyodide() {
   if (_pyPromise) return _pyPromise;
   _pyPromise = (async () => {
     showSpinner('Cargando Python (Pyodide). La primera vez tarda ~30–60 s…');
     try {
-      if (!window.loadPyodide)
-        await loadScript(`https://cdn.jsdelivr.net/pyodide/${PYODIDE_VERSION}/full/pyodide.js`);
-      setSpinner('Iniciando interprete de Python…');
-      const pyodide = await loadPyodide({ indexURL: `https://cdn.jsdelivr.net/pyodide/${PYODIDE_VERSION}/full/` });
-      setSpinner('Cargando NumPy, pandas, SciPy, matplotlib…');
-      await pyodide.loadPackage(['numpy', 'pandas', 'scipy', 'matplotlib']);
+      const pyodide = await _startPyodide();
       ['numpy', 'pandas', 'scipy', 'matplotlib'].forEach(p => _loadedPkgs.add(p));
       setSpinner('Preparando entorno grafico…');
       pyodide.runPython(PY_SETUP);
@@ -32,6 +64,9 @@ async function getPyodide() {
       catch (e) { console.warn('No se pudieron cargar las tipografias web; se usan las del sistema.', e); }
       window.__pyodide = pyodide;
       return pyodide;
+    } catch (e) {
+      _pyPromise = null;   // permite reintentar tras un fallo de red
+      throw e;
     } finally { hideSpinner(); }
   })();
   return _pyPromise;

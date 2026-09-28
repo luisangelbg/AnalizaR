@@ -1,8 +1,8 @@
 THIRD-PARTY COMPONENTS INCLUDED WITH StatsPro
 ===========================================
 
-The file listed below is not part of the original work of StatsPro.
-vendor/xlsx.full.min.js is an unmodified copy of a third-party open-source library,
+The files listed below are not part of the original work of StatsPro.
+They are unmodified copies of third-party open-source software,
 distributed under its own licence, reproduced below as that licence requires.
 
 Component : xlsx.full.min.js (spreadsheet reader), version 0.18.5
@@ -11,6 +11,14 @@ Licence   : Apache License, Version 2.0
 Source    : https://git.sheetjs.com/sheetjs/sheetjs
 Use       : reading .xlsx, .xls and .xlsm files when importing data; kept inside the
             application so it works without an internet connection
+
+Component : vendor/pyodide/ (Python engine), Pyodide 0.27.2 with NumPy, pandas, SciPy,
+            Matplotlib, statsmodels, scikit-learn and their dependencies
+Licence   : Mozilla Public License 2.0 for Pyodide; each package keeps its own
+            (BSD, MIT, PSF-based, HPND). Full list and texts: vendor/pyodide/LICENSES.txt
+Source    : https://github.com/pyodide/pyodide
+Use       : all the calculations; kept inside the application so it works without an
+            internet connection (if this copy is missing, the same release is loaded online)
 
 ------------------------------------------------------------------------------------
 

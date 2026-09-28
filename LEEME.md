@@ -14,8 +14,9 @@ ningún servidor.
 2. Se abre solo `http://localhost:8770` en tu navegador (Chrome o Edge).
    Si el puerto está ocupado:
    `powershell -ExecutionPolicy Bypass -File servidor.ps1 -Port 9001`
-3. La primera vez, al entrar al Bloque 2, tarda ~1 minuto en cargar Python. Necesitas
-   conexión a internet esa primera vez.
+3. Al entrar al Bloque 2 tarda unos segundos en cargar Python. El motor y sus
+   bibliotecas viajan dentro de la app (`vendor/pyodide/`), así que no necesitas
+   internet.
 
 > El doble clic en `index.html` **no** sirve para el análisis: el navegador solo deja
 > correr Python si la página viene por `http://`.
