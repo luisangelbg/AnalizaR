@@ -25,6 +25,8 @@ function showMessage(container, type, text) {
   const div = document.createElement('div');
   div.className = 'msg msg-' + type;
   div.innerHTML = text;
+  /* errores y avisos se anuncian al lector de pantalla */
+  if (window.LABG) LABG.messageRole(div, type);
   container.appendChild(div);
   return div;
 }
