@@ -27,6 +27,7 @@
      LABG.theme.init(clave) / toggle() tema claro/oscuro con memoria
      LABG.work(opciones)               espera animada que termina en palomita (ver abajo)
      LABG.progressBar / busyButton     barra en línea y botón que terminan en palomita
+     LABG.isotipo(clase)               el ícono LABG en vector (la A-biplot)
      LABG.SUITE_URL                    dirección del portal
 */
 (function () {
@@ -261,6 +262,25 @@
     },
   };
 
+  /* ---------------- isotipo LABG (la A-biplot) ----------------
+     LABG.isotipo(clase) devuelve el ícono en vector, con ids propios en cada copia para que
+     varias puedan convivir en la página. Los cinco puntos llevan la clase iso-dot y --i. */
+  let isoSeq = 0;
+  LABG.isotipo = function (cls, id) {
+    const k = id || 'labgIso' + (++isoSeq);
+    const A = 'M256 102.4L129.8 389.1M129.8 389.1L125.7 340.6M129.8 389.1L168.5 359.4M256 102.4L382.2 389.1M382.2 389.1L343.5 359.4M382.2 389.1L386.3 340.6';
+    let dots = '';
+    for (let i = 0; i < 5; i++) dots += '<circle class="iso-dot" style="--i:' + i + '" cx="' + (177.8 + 39.1 * i).toFixed(1) + '" cy="285.9" r="16.9" fill="url(#' + k + 's)"/>';
+    return '<svg class="' + (cls || 'labg-iso') + '" viewBox="0 0 512 512" aria-hidden="true" focusable="false"><defs>' +
+      '<linearGradient id="' + k + 'g" gradientUnits="userSpaceOnUse" x1="0" y1="102.4" x2="0" y2="389.12"><stop offset="0" stop-color="#EAFFF4"/><stop offset=".3" stop-color="#62E6A5"/><stop offset=".55" stop-color="#0C6A44"/><stop offset=".7" stop-color="#A2F6CC"/><stop offset="1" stop-color="#053F29"/></linearGradient>' +
+      '<radialGradient id="' + k + 's" cx=".35" cy=".3" r=".75"><stop offset="0" stop-color="#F0FFF7"/><stop offset=".38" stop-color="#3ED68B"/><stop offset="1" stop-color="#053A25"/></radialGradient>' +
+      '<radialGradient id="' + k + 'b" cx=".5" cy=".35" r=".8"><stop offset="0" stop-color="#0B2A1D"/><stop offset="1" stop-color="#08090B"/></radialGradient></defs>' +
+      '<rect x=".5" y=".5" width="511" height="511" rx="112.6" fill="url(#' + k + 'b)" stroke="#7BEDB5" stroke-opacity=".5"/>' +
+      '<g fill="none" stroke-width="41" stroke-linecap="round"><path d="' + A + '" stroke="#021610" transform="translate(3.2 4)"/>' +
+      '<path d="' + A + '" stroke="#021610" transform="translate(1.6 2)"/><path d="' + A + '" stroke="url(#' + k + 'g)"/></g>' +
+      dots + '<circle class="iso-top" cx="256" cy="102.4" r="31.9" fill="url(#' + k + 's)"/></svg>';
+  };
+
   /* ---------------- espera animada que termina en palomita ----------------
      const w = LABG.work({ title, message, scene, tips, cancel });
        w.update(0.4, 'Réplica 400 de 1000')  fracción 0–1; null si no se sabe cuánto falta
@@ -406,7 +426,9 @@
     card.setAttribute('aria-labelledby', tid); card.tabIndex = -1;
     const stage = el('div', 'lw-stage', card);
     const sc = buildScene(o.scene, stage);
-    const badge = el('div', 'lw-badge', stage); badge.appendChild(markSvg()); el('div', 'lw-ripple', badge);
+    /* al terminar: el isotipo LABG y, en su esquina, la insignia con la palomita (o el tache) */
+    const badge = el('div', 'lw-badge', stage); badge.innerHTML = LABG.isotipo('lw-iso');
+    el('div', 'lw-ripple', badge); el('span', 'lw-mark', badge).appendChild(markSvg());
     const burst = el('div', 'lw-burst', stage); burst.setAttribute('aria-hidden', 'true');
     for (let i = 0; i < 18; i++) el('i', '', burst);
     const title = el('h2', 'lw-title', card); title.id = tid; title.textContent = o.title;
