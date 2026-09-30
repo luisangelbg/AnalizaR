@@ -53,7 +53,7 @@ async function _startPyodide() {
 async function getPyodide() {
   if (_pyPromise) return _pyPromise;
   _pyPromise = (async () => {
-    showSpinner('Preparando el motor de Python…', 4);
+    showSpinner('Preparando el motor de Python…', 5);
     try {
       const pyodide = await _startPyodide();
       ['numpy', 'pandas', 'scipy', 'matplotlib'].forEach(p => _loadedPkgs.add(p));
