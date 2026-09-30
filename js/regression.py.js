@@ -228,7 +228,7 @@ async def reg_fit():
                 pred = mk.predict(Xin)
                 cvr, cva = _cv_rmse(lambda a, b, c: ctor().fit(a, b).predict(c),
                                     Xs if standardize else X, y)
-                _add(models, name, fam, mk, pred, note=note)
+                _add(models, name, fam, mk, pred, cvr=cvr, cva=cva, note=note)
             except Exception: pass
         sk('Ridge (regularizada L2)', lambda: RidgeCV(alphas=np.logspace(-3, 3, 30)), 'Regularizado',
            'Encoge coeficientes; útil con colinealidad.')
