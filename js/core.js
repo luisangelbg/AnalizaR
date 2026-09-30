@@ -27,6 +27,7 @@ function showMessage(container, type, text) {
   div.innerHTML = text;
   /* errores y avisos se anuncian al lector de pantalla */
   if (window.LABG) LABG.messageRole(div, type);
+  if (type === 'error' && typeof spinnerFailed === 'function') spinnerFailed();
   container.appendChild(div);
   return div;
 }

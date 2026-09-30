@@ -53,11 +53,12 @@ async function _startPyodide() {
 async function getPyodide() {
   if (_pyPromise) return _pyPromise;
   _pyPromise = (async () => {
-    showSpinner('Cargando Python (Pyodide). La primera vez tarda ~30–60 s…');
+    showSpinner('Preparando el motor de Python…', 4);
     try {
       const pyodide = await _startPyodide();
       ['numpy', 'pandas', 'scipy', 'matplotlib'].forEach(p => _loadedPkgs.add(p));
       setSpinner('Preparando entorno grafico…');
+      await _paint();
       pyodide.runPython(PY_SETUP);
       setSpinner('Cargando tipografias de alta calidad…');
       try { await pyodide.runPythonAsync(PY_FONTS); }
@@ -78,15 +79,20 @@ async function ensurePackages(pkgs) {
   const need = pkgs.filter(p => !_loadedPkgs.has(p));
   if (need.length) {
     showSpinner('Cargando ' + need.join(', ') + '…');
-    try { await py.loadPackage(need); need.forEach(p => _loadedPkgs.add(p)); }
+    try { await _paint(); await py.loadPackage(need); need.forEach(p => _loadedPkgs.add(p)); }
     finally { hideSpinner(); }
   }
   return py;
 }
 
+/* Con una ventana de espera abierta, deja que el navegador la pinte antes de que
+   Python ocupe la página: si no, el texto y la barra se quedan sin actualizar. */
+const _paint = () => (window.LABG && spinnerCount ? LABG.nextPaint() : Promise.resolve());
+
 /* Ejecuta Python async y devuelve el resultado convertido a JS puro. */
 async function runPy(code, globals) {
   const py = await getPyodide();
+  await _paint();
   if (globals) for (const [k, v] of Object.entries(globals)) py.globals.set(k, v);
   const res = await py.runPythonAsync(code);
   if (res && res.toJs) {

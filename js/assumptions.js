@@ -51,7 +51,7 @@ async function runAssumptions() {
   if (!factors.length) { showMessage('a3Messages', 'error', 'Elige al menos un factor.'); return; }
   const inter = el('a3Inter').checked && factors.length >= 2;
   clearMessages('a3Messages');
-  showSpinner('Ajustando el modelo…');
+  showSpinner('Ajustando el modelo…', 6);
   try {
     await ensureAssump();
     const fit = await runPyJSON('fit_model(_resp, _fac, _intr)', { _resp: resp, _fac: JSON.stringify(factors), _intr: inter });
@@ -91,12 +91,22 @@ async function runAssumptions() {
 async function regenAssumpFigs() {
   const s = A3.styleBar.get();
   A3.theme = s.theme; A3.style = s;
-  showSpinner('Regenerando figuras…');
+  showSpinner('Regenerando figuras…', A3_FIGS.length);
   try {
-    const figs = await runPyJSON(`all_figs(${JSON.stringify(s.theme)}, ${JSON.stringify(JSON.stringify(s))})`);
+    /* una figura por llamada (lo mismo que all_figs en Python), para que la barra avance entre ellas */
+    const th = JSON.stringify(s.theme), opts = JSON.stringify(JSON.stringify(s));
+    await runPy(`A['theme'] = ${th}`);
+    const figs = {};
+    for (let i = 0; i < A3_FIGS.length; i++) {
+      figs[A3_FIGS[i]] = await runPy(`assump_fig('${A3_FIGS[i]}', 'png', 170, ${th}, opts_json=${opts})`);
+      setSpinner('Figuras listas: ' + (i + 1) + ' de ' + A3_FIGS.length);
+    }
     renderFigGallery(figs);
   } finally { hideSpinner(); }
 }
+/* el mismo orden que all_figs en assumptions.py.js */
+const A3_FIGS = ['panel4', 'qq', 'pp', 'hist_resid', 'resid_fitted', 'scale_location',
+                 'resid_box_group', 'sd_group', 'resid_order', 'acf', 'cooks', 'influence'];
 
 /* ---------- render ---------- */
 function badge(v) {

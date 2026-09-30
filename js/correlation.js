@@ -64,7 +64,7 @@ async function runMatrix() {
     state.corr = { pairs: r.pairs };
     el('c5MatrixResults').style.display = 'block';
     C5.matrixDone = true;
-    ['heatmap', 'corrplot', 'network', 'pairs'].forEach(k => renderCorrFig(k));
+    await drawFigs(['heatmap', 'corrplot', 'network', 'pairs'], renderCorrFig);
   } catch (err) {
     console.error(err); showMessage('c5Messages', 'error', 'Error: ' + (err.message || err).toString().split('\n').slice(-3).join('<br>'));
   } finally { hideSpinner(); }

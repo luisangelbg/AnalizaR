@@ -25,6 +25,15 @@ def _rr(v, d=4):
     except Exception: return None
 
 # ---------- preparacion ----------
+# avance: después de cada modelo avisa a la ventana de espera y le da tiempo de pintarse
+async def _paso(nombre):
+    R['_paso'] = R.get('_paso', 0) + 1
+    try:
+        from js import regPaso
+        await regPaso(nombre, R['_paso'], R.get('_pasos', 1))
+    except Exception:
+        pass
+
 def reg_prepare(resp, nums_json, cats_json):
     nums = json.loads(nums_json); cats = json.loads(cats_json)
     cols = [resp] + nums + cats
@@ -101,10 +110,16 @@ def _add(models, name, family, obj, pred, k=None, aic=None, bic=None, ll=None,
                         RMSE_cv=_rr(cvr, 4), MAE_cv=_rr(cva, 4), nota=note, formula=formula)
     R['obj'][name] = dict(obj=obj, pred=pred, kind=family)
 
-def reg_fit():
+async def reg_fit():
     d = R['d']; resp = R['resp']; nums = R['nums']; cats = R['cats']; y = R['y']; n = R['n']
     R['obj'] = {}
     models = {}
+    # avance para la ventana de espera: un paso por modelo (o familia) ajustado
+    _xp = [c for c in nums if np.all(d[c].values > 0)]
+    R['_paso'] = 0
+    R['_pasos'] = (1 + (3 if nums else 0) + (1 if len(nums + cats) >= 2 else 0) + (1 if R['y_pos'] else 0)
+                   + ((2 if R['y_pos'] else 1) if _xp else 0) + 1 + (1 if R['y_pos'] else 0)
+                   + (1 if R['y_count'] else 0) + 1 + (6 if (nums or cats) else 0) + (3 if R['single'] else 0))
     base_terms = _terms(nums, cats)
 
     def sm_ols(name, formula, note='', inv=None, ry=None):
@@ -121,32 +136,40 @@ def reg_fit():
 
     # 1. lineal
     sm_ols('Lineal (MCO)', f'Q("{resp}") ~ {base_terms}', 'Regresión lineal simple/múltiple por mínimos cuadrados.')
+    await _paso('Lineal (MCO)')
     # 2-3. polinomica
     if nums:
         poly2 = ' + '.join([f'Q("{c}") + I(Q("{c}")**2)' for c in nums] + [f'C(Q("{c}"))' for c in cats])
         poly3 = ' + '.join([f'Q("{c}") + I(Q("{c}")**2) + I(Q("{c}")**3)' for c in nums] + [f'C(Q("{c}"))' for c in cats])
         sm_ols('Polinómica grado 2', f'Q("{resp}") ~ {poly2}', 'Captura curvatura simple.')
+        await _paso('Polinómica grado 2')
         sm_ols('Polinómica grado 3', f'Q("{resp}") ~ {poly3}', 'Curvatura más compleja (cuidado con sobreajuste).')
+        await _paso('Polinómica grado 3')
         # 4. splines
         try:
             spl = ' + '.join([f'cr(Q("{c}"), df=4)' for c in nums] + [f'C(Q("{c}"))' for c in cats])
             sm_ols('Splines naturales (cúbicos)', f'Q("{resp}") ~ {spl}', 'Ajuste flexible por tramos suaves; semiparamétrico.')
         except Exception: pass
+        await _paso('Splines naturales (cúbicos)')
     # 5. interacciones
     allp = nums + cats
     if len(allp) >= 2:
         t = ' + '.join([f'Q("{c}")' if c in nums else f'C(Q("{c}"))' for c in allp])
         sm_ols('Con interacciones (2 vías)', f'Q("{resp}") ~ ({t})**2', 'Permite que el efecto de una variable dependa de otra.')
+        await _paso('Con interacciones (2 vías)')
     # 6. transformaciones log
     if R['y_pos']:
         sm_ols('Semilog — log(Y)', f'np.log(Q("{resp}")) ~ {base_terms}',
                'Crecimiento proporcional (elasticidad parcial).', inv=np.exp)
+        await _paso('Semilog — log(Y)')
     xpos = [c for c in nums if np.all(d[c].values > 0)]
     if xpos:
         tt = ' + '.join([f'np.log(Q("{c}"))' for c in xpos] + [f'Q("{c}")' for c in nums if c not in xpos] + [f'C(Q("{c}"))' for c in cats])
         sm_ols('Semilog — log(X)', f'Q("{resp}") ~ {tt}', 'Rendimientos decrecientes.')
+        await _paso('Semilog — log(X)')
         if R['y_pos']:
             sm_ols('Doble log (elasticidad)', f'np.log(Q("{resp}")) ~ {tt}', 'Los coeficientes son elasticidades.', inv=np.exp)
+            await _paso('Doble log (elasticidad)')
 
     # 7. robusta
     try:
@@ -160,6 +183,7 @@ def reg_fit():
             _add(models, 'Robusta (Huber M)', 'Robusto', m, np.asarray(m.predict(Xrc)), k=Xrc.shape[1],
                  cvr=cvr, cva=cva, note='Reduce el peso de los valores atípicos (estimador M de Huber).')
     except Exception: pass
+    await _paso('Robusta (Huber M)')
 
     # 8. GLM
     if R['y_pos']:
@@ -172,6 +196,7 @@ def reg_fit():
             _add(models, 'GLM Gamma (liga log)', 'GLM', m, p, k=int(m.df_model) + 1,
                  aic=m.aic, ll=m.llf, note='Respuesta positiva y asimétrica; varianza ∝ media².')
         except Exception: pass
+        await _paso('GLM Gamma (liga log)')
     if R['y_count']:
         try:
             f = 'Q("%s") ~ %s' % (resp, base_terms)
@@ -179,6 +204,7 @@ def reg_fit():
             _add(models, 'GLM Poisson', 'GLM', m, m.predict(d).values, k=int(m.df_model) + 1,
                  aic=m.aic, ll=m.llf, note='Datos de conteo.')
         except Exception: pass
+        await _paso('GLM Poisson')
 
     # 9. cuantiles
     try:
@@ -187,6 +213,7 @@ def reg_fit():
         _add(models, 'Regresión de cuantiles (mediana)', 'No paramétrico', m, m.predict(d).values,
              k=int(m.df_model) + 1, note='Modela la mediana; robusta a atípicos y a la no normalidad.')
     except Exception: pass
+    await _paso('Regresión de cuantiles (mediana)')
 
     # 10-13. sklearn (multi)
     X, xn = _design_sklearn(d, nums, cats)
@@ -205,16 +232,22 @@ def reg_fit():
             except Exception: pass
         sk('Ridge (regularizada L2)', lambda: RidgeCV(alphas=np.logspace(-3, 3, 30)), 'Regularizado',
            'Encoge coeficientes; útil con colinealidad.')
+        await _paso('Ridge (regularizada L2)')
         sk('Lasso (regularizada L1)', lambda: LassoCV(cv=5, random_state=0, max_iter=5000), 'Regularizado',
            'Selecciona variables (coeficientes a 0).')
+        await _paso('Lasso (regularizada L1)')
         sk('Elastic Net', lambda: ElasticNetCV(cv=5, random_state=0, max_iter=5000), 'Regularizado',
            'Mezcla de Ridge y Lasso.')
+        await _paso('Elastic Net')
         sk('Theil-Sen (no paramétrica robusta)', lambda: TheilSenRegressor(random_state=0, max_subpopulation=2000),
            'No paramétrico', 'Pendiente robusta basada en medianas.')
+        await _paso('Theil-Sen (no paramétrica robusta)')
         sk('k vecinos más cercanos (kNN)', lambda: KNeighborsRegressor(n_neighbors=max(3, int(np.sqrt(n)))),
            'No paramétrico', 'Promedia las k observaciones más parecidas.')
+        await _paso('k vecinos más cercanos (kNN)')
         sk('Bosque aleatorio (Random Forest)', lambda: RandomForestRegressor(n_estimators=300, random_state=0),
            'Aprendizaje automático', 'Muy flexible; capta interacciones y no linealidad automáticamente.')
+        await _paso('Bosque aleatorio (Random Forest)')
 
     # 14. isotonica (1 num)
     if R['single']:
@@ -227,6 +260,7 @@ def reg_fit():
             _add(models, 'Isotónica (monótona)', 'No paramétrico', iso, pred, cvr=cvr, cva=cva,
                  note='Sólo asume que la relación es monótona (creciente o decreciente).')
         except Exception: pass
+        await _paso('Isotónica (monótona)')
         # 15. LOESS
         try:
             lo = lowess(y, xv, frac=0.4, return_sorted=True)
@@ -238,8 +272,10 @@ def reg_fit():
             _add(models, 'LOESS (regresión local)', 'No paramétrico', ('loess', lo), pred, cvr=cvr, cva=cva,
                  note='Suaviza localmente; ideal para explorar la forma de la relación.')
         except Exception: pass
+        await _paso('LOESS (regresión local)')
         # 16-19. no lineales
         _nonlinear(models, xv, y)
+        await _paso('Modelos no lineales')
 
     R['models'] = models
     order = sorted(models.values(), key=lambda m: (m['RMSE_cv'] is None, m['RMSE_cv'] if m['RMSE_cv'] is not None else 1e18))

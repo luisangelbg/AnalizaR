@@ -104,16 +104,84 @@ if (window.LABG) {
 }
 refreshStepMarks();
 refreshStepFooters();
-let spinnerCount = 0;
-function showSpinner(text) {
-  spinnerCount++;
-  el('spinnerText').textContent = text || 'Trabajando…';
-  el('spinner').style.display = 'flex';
+/* Ventana de espera: la común de la suite (LABG.work), con los datos que se ordenan en una recta.
+   showSpinner(texto, pasos)  la abre; si ya está abierta (una espera dentro de otra), cambia el texto.
+                              Con «pasos», cada setSpinner avanza la barra un paso. Una espera con pasos
+                              dentro de otra (las figuras dentro de los supuestos, la carga de Python
+                              dentro de un análisis) avanza solo dentro del tramo que le toca.
+   setSpinner(texto)          cambia el texto y avanza un paso de la espera activa, si los tiene
+   spinnerProgress(f, texto)  fija la fracción terminada de la espera activa, 0–1
+   hideSpinner()              la cierra con palomita; sin ella si hubo un error o si duró muy poco */
+let spinnerCount = 0, spin = null;   /* spin.frames: una por espera abierta; la última es la activa */
+const frameFrac = f => f.steps ? f.lo + (f.hi - f.lo) * Math.min(f.k / f.steps, 1) : f.frac;
+function paintSpinner(text) {
+  const f = frameFrac(spin.frames[spin.frames.length - 1]);
+  spin.w.update(f == null ? null : Math.min(f, 0.97), text);
 }
-function setSpinner(text) { el('spinnerText').textContent = text; }
+if (window.LABG) {
+  LABG.work.scene = 'fit';
+  LABG.work.tips = [
+    ['Cada figura tiene su barra de estilo: tipografía y tamaño se cambian sin repetir el análisis.',
+     'Every figure has its own style bar: change the typeface and size without rerunning the analysis.'],
+    ['El bloque de supuestos te dice qué hacer si tus datos no los cumplen.',
+     'The assumptions block tells you what to do when your data do not meet them.'],
+  ];
+}
+function showSpinner(text, steps) {
+  spinnerCount++;
+  if (!window.LABG) {
+    el('spinnerText').textContent = text || 'Trabajando…';
+    el('spinner').style.display = 'flex';
+    return;
+  }
+  if (!spin) {
+    spin = { w: LABG.work({ title: text || 'Trabajando…', delay: 350 }), t0: performance.now(), failed: false,
+             frames: [{ steps: steps || 0, k: 0, lo: 0, hi: 1, frac: steps ? 0 : null }] };
+  } else {
+    /* el tramo de la espera interior: de donde va la exterior hasta su paso siguiente */
+    const p = spin.frames[spin.frames.length - 1], pf = frameFrac(p);
+    const lo = pf == null ? 0 : pf;
+    const hi = pf == null ? 1 : p.steps ? Math.min(p.hi, pf + (p.hi - p.lo) / p.steps) : pf;
+    spin.frames.push({ steps: steps || 0, k: 0, lo, hi, frac: pf });
+    spin.w.message(text);
+  }
+  paintSpinner();
+}
+function setSpinner(text) {
+  if (!window.LABG) { el('spinnerText').textContent = text; return; }
+  if (!spin) return;
+  const f = spin.frames[spin.frames.length - 1];
+  if (f.steps) f.k++;
+  paintSpinner(text);
+}
+function spinnerProgress(frac, text) {
+  if (!spin) return;
+  const f = spin.frames[spin.frames.length - 1];
+  if (!f.steps) f.frac = frac;
+  paintSpinner(text);
+}
+/* Dibuja las figuras de un análisis una tras otra con la ventana de espera abierta, para que
+   «¡Listo!» salga cuando de verdad terminaron. Como antes, una figura que falla no detiene a las demás. */
+async function drawFigs(kinds, render) {
+  for (let i = 0; i < kinds.length; i++) {
+    setSpinner('Dibujando figura ' + (i + 1) + ' de ' + kinds.length + '…');
+    try { await render(kinds[i]); } catch (e) { console.error(e); }
+  }
+}
+/* core.js avisa cuando se muestra un error: esa espera no termina en palomita */
+function spinnerFailed() { if (spin) spin.failed = true; }
 function hideSpinner(force) {
   spinnerCount = force ? 0 : Math.max(0, spinnerCount - 1);
-  if (spinnerCount === 0) el('spinner').style.display = 'none';
+  if (spin && spinnerCount > 0) {
+    while (spin.frames.length > spinnerCount) spin.frames.pop();
+    paintSpinner();
+  }
+  if (spinnerCount !== 0) return;
+  if (!window.LABG) { el('spinner').style.display = 'none'; return; }
+  if (!spin) return;
+  const s = spin; spin = null;
+  if (s.failed || performance.now() - s.t0 < 450) s.w.close();
+  else s.w.done(null, { hold: 1300 });
 }
 
 /* pestanas dentro de un bloque */

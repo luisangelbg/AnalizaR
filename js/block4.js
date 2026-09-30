@@ -34,14 +34,16 @@ async function runRegression() {
   if (!resp) { showMessage('r4Messages', 'error', 'Elige la variable respuesta.'); return; }
   if (!numX.length && !catX.length) { showMessage('r4Messages', 'error', 'Elige al menos un predictor.'); return; }
   clearMessages('r4Messages');
-  showSpinner('Preparando datos…');
+  showSpinner('Ajustando la batería de modelos');
+  spinnerProgress(0, 'Preparando datos…');
   try {
     await ensureReg();
     const info = await runPyJSON('reg_prepare(_resp, _nx, _cx)', { _resp: resp, _nx: JSON.stringify(numX), _cx: JSON.stringify(catX) });
-    setSpinner('Ajustando modelos (esto puede tardar ~15 s)…');
-    const fit = await runPyJSON('reg_fit()');
-    setSpinner('Comparando y recomendando…');
+    spinnerProgress(0.05, 'Ajustando modelos…');
+    const fit = await runPyJSON('await reg_fit()');
+    spinnerProgress(0.86, 'Comparando y recomendando…');
     const nested = await runPyJSON('reg_nested_tests()');
+    spinnerProgress(0.94, 'Preparando tablas y figuras…');
     const rec = await runPyJSON('reg_recommend()');
 
     renderRegTable(fit, rec.best);
@@ -170,3 +172,10 @@ async function exportReg(kind, name, fmt) {
     if (uri) download(dataURItoBlob(uri), `${slug(state.fileName)}_reg_${kind}_${slug(name)}.${fmt}`);
   } finally { hideSpinner(); }
 }
+
+/* Python llama a regPaso después de cada modelo (regression.py.js, _paso): avanza la barra
+   entre el 5 % y el 85 % y deja que el navegador pinte antes de seguir con el siguiente. */
+window.regPaso = function (nombre, k, n) {
+  spinnerProgress(0.05 + 0.8 * Math.min(k / Math.max(n, 1), 1), 'Modelo ' + k + ' de ' + n + ': ' + nombre);
+  return window.LABG ? LABG.nextPaint() : Promise.resolve();
+};

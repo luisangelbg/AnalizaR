@@ -137,7 +137,7 @@ async function runFactor() {
     el('m6ContribDim').innerHTML = [...Array(r.ncomp)].map((_, i) => `<option value="${i + 1}">Dim ${i + 1}</option>`).join('');
     B6.factorDone = true;
     el('m6FactorResults').style.display = 'block';
-    ['scree', 'var_circle', 'ind', 'biplot', 'var_contrib'].forEach(renderFactorFig);
+    await drawFigs(['scree', 'var_circle', 'ind', 'biplot', 'var_contrib'], renderFactorFig);
     el('m6FaLoadWrap') && (el('m6FaLoadWrap').style.display = 'none');
   } catch (err) {
     console.error(err); showMessage('m6Msg', 'error', (err.message || err).toString().split('\n').slice(-4).join('<br>'));
@@ -192,7 +192,7 @@ el('dlScoresCsv').addEventListener('click', async () => {
 
 /* ---------- CLUSTERING ---------- */
 el('cl6Prep').addEventListener('click', async () => {
-  showSpinner('Preparando datos para clustering…');
+  showSpinner('Preparando datos para clustering…', 2);
   try {
     await ensureMV(); await ensureClust();
     const src = el('cl6Source').value;
@@ -251,7 +251,7 @@ el('cl6Run').addEventListener('click', async () => {
     el('cl6ProfNote').innerHTML = prof.nota;
     B6.clustDone = true;
     el('cl6FitResults').style.display = 'block';
-    ['scatter', 'silhouette', 'dendrogram', 'profile_heat', 'profile_parallel'].forEach(renderClustFig);
+    await drawFigs(['scatter', 'silhouette', 'dendrogram', 'profile_heat', 'profile_parallel'], renderClustFig);
     if (el('cl6Group').value) renderClustFig('compare_group');
     el('cl6CompareWrap').style.display = el('cl6Group').value ? 'block' : 'none';
   } catch (err) { console.error(err); showMessage('cl6Msg', 'error', (err.message || err).toString().split('\n').slice(-4).join('<br>')); }
