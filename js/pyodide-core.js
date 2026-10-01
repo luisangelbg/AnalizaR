@@ -254,18 +254,96 @@ def _svg_embed_font(svg_text):
     return svg_text[:i + 1] + css + svg_text[i + 1:]
 
 def fig_to_uri(fig, fmt='png', dpi=140):
+    kw = {}
+    if _XP:
+        # exportación desde el Estudio de figuras: otras medidas de salida, el mismo dibujo
+        fmt = _XP.get('fmt') or fmt
+        dpi = _XP.get('dpi') or dpi
+        _xp_fit(fig)
+        kw['dpi'] = int(dpi)      # también para las partes en píxeles dentro de SVG y PDF
+        if _XP.get('transparent'): kw['transparent'] = True
     buf = io.BytesIO()
     if fmt == 'svg':
-        fig.savefig(buf, format='svg'); mime = 'image/svg+xml'
+        fig.savefig(buf, format='svg', **kw); mime = 'image/svg+xml'
         plt.close(fig)
         txt = _svg_embed_font(buf.getvalue().decode('utf-8'))
         return 'data:%s;base64,%s' % (mime, base64.b64encode(txt.encode('utf-8')).decode())
     elif fmt == 'pdf':
-        fig.savefig(buf, format='pdf'); mime='application/pdf'
+        fig.savefig(buf, format='pdf', **kw); mime='application/pdf'
     else:
-        fig.savefig(buf, format='png', dpi=dpi); mime='image/png'
+        kw['dpi'] = int(dpi)
+        fig.savefig(buf, format='png', **kw); mime='image/png'
     plt.close(fig)
     return 'data:%s;base64,%s' % (mime, base64.b64encode(buf.getvalue()).decode())
+
+# ---------------- exportación a medida (Estudio de figuras LABG) ----------------
+# El estudio vuelve a ejecutar la misma llamada que dibujó una figura, con otras medidas de
+# salida: ancho y alto en pulgadas, resolución, formato y fondo transparente. No cambia
+# ningún cálculo: solo el tamaño del papel, los ppp y el tipo de archivo.
+import ast, warnings
+_XP = {}
+
+def _xp_relayout(fig):
+    try:
+        eng = fig.get_layout_engine()
+    except Exception:
+        eng = None
+    if eng is not None and 'Constrained' in type(eng).__name__:
+        return
+    try:
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore')
+            fig.tight_layout()
+    except Exception:
+        pass
+
+def _xp_fit(fig):
+    """Lleva la figura al ancho (y alto) pedidos, medidos con el recorte ajustado con que se guarda;
+    el texto conserva su tamaño en puntos."""
+    W = _XP.get('w'); H = _XP.get('h')
+    if not W:
+        return
+    W = float(W); H = float(H) if H else None
+    try:
+        pad = float(plt.rcParams.get('savefig.pad_inches', 0.1))
+    except Exception:
+        pad = 0.1
+    w0, h0 = fig.get_size_inches()
+    fig.set_size_inches(W, H if H else W * h0 / w0)
+    _xp_relayout(fig)
+    for _ in range(4):
+        fig.canvas.draw()
+        bb = fig.get_tightbbox(fig.canvas.get_renderer())
+        tw, th = bb.width + 2 * pad, bb.height + 2 * pad
+        if abs(tw - W) <= W * 0.004 and (H is None or abs(th - H) <= H * 0.004):
+            break
+        fw, fh = fig.get_size_inches()
+        sx = W / tw
+        sy = (H / th) if H else sx
+        fig.set_size_inches(max(0.8, fw * sx), max(0.6, fh * sy))
+        _xp_relayout(fig)
+
+def _xp_begin(o_json):
+    _XP.clear()
+    _XP.update(json.loads(o_json) if o_json else {})
+
+def _xp_end():
+    _XP.clear()
+
+def _xp_run(o_json, code):
+    """Ejecuta la llamada que dibujó una figura con las medidas de salida del estudio."""
+    _xp_begin(o_json)
+    try:
+        tree = ast.parse(code, mode='exec')
+        last = None
+        if tree.body and isinstance(tree.body[-1], ast.Expr):
+            last = ast.Expression(tree.body.pop().value)
+        g = globals()
+        if tree.body:
+            exec(compile(tree, '<estudio>', 'exec'), g)
+        return eval(compile(last, '<estudio>', 'eval'), g) if last is not None else None
+    finally:
+        _xp_end()
 
 # ---------------- datos ----------------
 def load_data(json_str, roles_json):
